@@ -73,3 +73,25 @@ know only `Domain`; `App` knows everybody.
   `(0, 0)`. Correcting it fights autoresizing every time the panel's
   height changes with state. Stage 6 owns the visual pass and can
   reintroduce a centred scale by animating the window frame instead.
+- **Stage 2 — `NSPasteboard.accessBehavior` is read-only.** HANDOFF.md
+  §6.6 says to "set `NSPasteboard.accessBehavior` appropriately." The
+  macOS 26.5 SDK header (`NSPasteboard.h`) declares it
+  `@property (readonly, assign) NSPasteboardAccessBehavior accessBehavior`
+  — the user sets it per-app in System Settings; the app can only read
+  it. `PasteboardTextSource` reads it once to short-circuit to
+  `.pasteboardAccessDenied` when the value is `.alwaysDeny`, without
+  attempting a content read.
+- **Stage 2 — no generic "string present" `detect*` API exists.**
+  HANDOFF.md §6.6 says to "use the non-prompting `detect*` API to check
+  a string type is present before reading." The actual macOS 15.4+
+  non-prompting surface (`NSPasteboard.detectedPatterns(for:)`,
+  `detectedValues(for:)`, `detectedMetadata(for:)`, confirmed from
+  `AppKit.swiftinterface`) only covers specific Data Detector patterns
+  (web URL, web search, number, links, phone numbers, email/postal
+  addresses, calendar events, tracking numbers, flight numbers, money
+  amounts) — there is no pattern for "a plain string is present."
+  `PasteboardTextSource` instead calls the older, still-current
+  `canReadItem(withDataConformingToTypes:)` (macOS 10.6), which checks
+  type presence without reading the item's data payload and so does not
+  trigger the privacy prompt — the same non-prompting property the spec
+  asked for, under a different, real name.

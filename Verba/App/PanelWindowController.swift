@@ -11,6 +11,8 @@ final class PanelWindowController: NSObject {
     // MARK: Private properties
 
     private let panel: FloatingPanel
+    private let contentViewModel: PanelContentViewModel
+    private var captureTask: Task<Void, Never>?
 
     // MARK: Static
 
@@ -20,16 +22,17 @@ final class PanelWindowController: NSObject {
 
     // MARK: Init
 
-    init(logger: AppLogger) {
+    init(logger: AppLogger, captureTextUseCase: CaptureTextUseCase) {
         self.logger = logger
         panel = FloatingPanel(contentRect: NSRect(x: 0, y: 0, width: Self.width, height: 0))
+        contentViewModel = PanelContentViewModel(captureTextUseCase: captureTextUseCase, logger: logger)
         super.init()
     }
 
     // MARK: Lifecycle
 
     func start() {
-        let hostingView = NSHostingView(rootView: PanelRootView())
+        let hostingView = NSHostingView(rootView: PanelRootView(viewModel: contentViewModel))
         hostingView.autoresizingMask = [.width, .height]
         panel.contentView = hostingView
         panel.delegate = self
@@ -48,7 +51,30 @@ final class PanelWindowController: NSObject {
 
     func show() {
         guard panel.isVisible == false else { return }
+        reveal()
+        beginCapture()
+    }
 
+    func present(_ sourceText: SourceText) {
+        captureTask?.cancel()
+        captureTask = nil
+        contentViewModel.present(sourceText)
+        guard panel.isVisible == false else { return }
+        reveal()
+    }
+
+    func hide() {
+        guard panel.isVisible else { return }
+        captureTask?.cancel()
+        captureTask = nil
+        panel.orderOut(nil)
+        contentViewModel.reset()
+        logger.panelHidden(windowCount: NSApp.windows.count)
+    }
+
+    // MARK: Private methods
+
+    private func reveal() {
         let frame = frameCenteredOnMouseScreen()
         let reduceMotion = NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
 
@@ -75,13 +101,12 @@ final class PanelWindowController: NSObject {
         logger.panelShown(windowCount: NSApp.windows.count)
     }
 
-    func hide() {
-        guard panel.isVisible else { return }
-        panel.orderOut(nil)
-        logger.panelHidden(windowCount: NSApp.windows.count)
+    private func beginCapture() {
+        captureTask?.cancel()
+        captureTask = Task { [weak self] in
+            await self?.contentViewModel.beginCapture()
+        }
     }
-
-    // MARK: Private methods
 
     private func frameCenteredOnMouseScreen() -> NSRect {
         let mouseLocation = NSEvent.mouseLocation

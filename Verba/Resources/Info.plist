@@ -26,5 +26,23 @@
 	<string>Copyright © 2026 Dmytro Vorko. All rights reserved.</string>
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
+	<key>NSServices</key>
+	<array>
+		<dict>
+			<key>NSMenuItem</key>
+			<dict>
+				<key>default</key>
+				<string>Improve with Verba</string>
+			</dict>
+			<key>NSMessage</key>
+			<string>improveText</string>
+			<key>NSPortName</key>
+			<string>Verba</string>
+			<key>NSSendTypes</key>
+			<array>
+				<string>NSStringPboardType</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>

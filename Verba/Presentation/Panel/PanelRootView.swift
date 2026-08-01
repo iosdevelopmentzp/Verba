@@ -1,20 +1,39 @@
 import SwiftUI
 
 struct PanelRootView: View {
-    @FocusState private var isFocused: Bool
+    @Bindable var viewModel: PanelContentViewModel
+    @FocusState private var isDraftFocused: Bool
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        content
+            .padding(24)
+            .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    @ViewBuilder
+    private var content: some View {
+        if let sourceText = viewModel.sourceText {
+            SourcePreviewView(sourceText: sourceText)
+        } else {
+            manualEntry
+        }
+    }
+
+    private var manualEntry: some View {
+        VStack(alignment: .leading, spacing: 12) {
             Text("Verba")
                 .font(.title2.weight(.semibold))
-            Text("Stage 1 — panel skeleton")
+
+            TextField("⌘C some text, or type here", text: $viewModel.manualDraft, axis: .vertical)
+                .textFieldStyle(.plain)
                 .font(.body)
-                .foregroundStyle(.secondary)
+                .lineLimit(1...5)
+                .focused($isDraftFocused)
+
+            Button("Accept") { viewModel.acceptManualEntry() }
+                .keyboardShortcut(.return, modifiers: .command)
+                .controlSize(.small)
         }
-        .padding(24)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .focusable()
-        .focused($isFocused)
-        .onAppear { isFocused = true }
+        .onAppear { isDraftFocused = true }
     }
 }

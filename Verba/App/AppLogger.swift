@@ -45,4 +45,18 @@ struct AppLogger: Sendable {
     func panelHidden(windowCount: Int) {
         panel.notice("panel hidden windowCount=\(windowCount)")
     }
+
+    func textCaptured(charCount: Int, origin: String, language: TextLanguage) {
+        capture.notice(
+            "captured charCount=\(charCount, privacy: .public) origin=\(origin, privacy: .public) language=\(language.rawValue, privacy: .public)"
+        )
+    }
+
+    func textCaptureFailed(_ error: AppError) {
+        capture.notice("capture failed error=\(String(describing: error), privacy: .public)")
+    }
+
+    func serviceInvoked(charCount: Int) {
+        capture.notice("service invoked charCount=\(charCount, privacy: .public)")
+    }
 }
