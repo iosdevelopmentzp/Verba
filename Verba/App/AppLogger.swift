@@ -60,14 +60,6 @@ struct AppLogger: Sendable {
         capture.notice("service invoked charCount=\(charCount, privacy: .public)")
     }
 
-    func debugSampleSucceeded(cameFromCache: Bool) {
-        app.notice("debug sample succeeded cacheHit=\(cameFromCache, privacy: .public)")
-    }
-
-    func debugSampleFailed(_ error: AppError) {
-        app.notice("debug sample failed error=\(String(describing: error), privacy: .public)")
-    }
-
     func llmRequestSucceeded(
         actionID: String,
         modelID: String,

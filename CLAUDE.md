@@ -106,3 +106,26 @@ know only `Domain`; `App` knows everybody.
   risk. The formula now floors at 700 and ceilings at 2000, effort is
   `minimal` rather than `low`, and a truncated response is retried once
   with double the budget before surfacing `.malformedResponse`.
+- **Stage 4 — the panel's "Open Settings" recovery button uses
+  `NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from:
+  nil)` instead of `@Environment(\.openSettings)`.** `VerbaApp`'s own
+  menu bar button already used the SwiftUI `openSettings` environment
+  action successfully, but that button lives inside `MenuBarExtra`'s
+  content, which SwiftUI renders as part of the app's real `Scene`
+  graph. `PanelRootView` is hosted through a manually-created
+  `NSHostingView` assigned to `FloatingPanel.contentView` — it is never
+  part of that `Scene` graph — so there is no guarantee the environment
+  action resolves to a working handler there, and this could not be
+  interactively verified. `PanelViewModel.onOpenSettingsRequested` is a
+  plain closure wired in `PanelWindowController.start()`, keeping the
+  AppKit call in the `App` layer where it belongs; `ErrorView` only
+  calls the closure, never AppKit directly.
+- **Stage 4 — `ErrorView`'s `.rateLimited` message is a single string,
+  not the two-phase "Retrying in ⁠…s… then Still rate limited." from
+  §10.** The one automatic retry already happens inside
+  `LLMTextProcessor`/`RetryPolicy` before `ProcessTextUseCase` ever
+  throws; by the time `AppError.rateLimited` reaches `PanelViewModel`,
+  that retry has already been attempted and failed, so a live countdown
+  would be fiction. `ErrorView` shows "Still rate limited." Stage 5, which
+  owns the full error matrix, can plumb a genuine retry-in-progress
+  signal from `Data` to `Presentation` if a live countdown is wanted.

@@ -11,10 +11,6 @@ final class AppContainer {
     let servicesProvider: ServicesProvider
     let settingsViewModel: SettingsViewModel
 
-    // MARK: Private properties
-
-    private let processTextUseCase: ProcessTextUseCase
-
     // MARK: Init
 
     init() {
@@ -23,14 +19,6 @@ final class AppContainer {
         let textSource = PasteboardTextSource()
         let languageDetector = NLLanguageDetector()
         let captureTextUseCase = CaptureTextUseCase(textSource: textSource, languageDetector: languageDetector)
-
-        panelWindowController = PanelWindowController(logger: logger, captureTextUseCase: captureTextUseCase)
-        hotkeyController = HotkeyController(panelController: panelWindowController, logger: logger)
-        servicesProvider = ServicesProvider(
-            panelController: panelWindowController,
-            captureTextUseCase: captureTextUseCase,
-            logger: logger
-        )
 
         let preferences = UserDefaultsPreferenceStore()
         let secretStore = KeychainSecretStore(logger: logger)
@@ -50,7 +38,22 @@ final class AppContainer {
             logger: logger
         )
 
-        processTextUseCase = ProcessTextUseCase(textProcessor: textProcessor, cache: resultCache, preferences: preferences)
+        let processTextUseCase = ProcessTextUseCase(textProcessor: textProcessor, cache: resultCache, preferences: preferences)
+        let deliverResultUseCase = DeliverResultUseCase(resultDeliverer: PasteboardResultSink())
+
+        panelWindowController = PanelWindowController(
+            logger: logger,
+            captureTextUseCase: captureTextUseCase,
+            processTextUseCase: processTextUseCase,
+            deliverResultUseCase: deliverResultUseCase,
+            preferences: preferences
+        )
+        hotkeyController = HotkeyController(panelController: panelWindowController, logger: logger)
+        servicesProvider = ServicesProvider(
+            panelController: panelWindowController,
+            captureTextUseCase: captureTextUseCase,
+            logger: logger
+        )
 
         let modelOptions = ModelCatalog.models(providerID: ProviderID.openAI).map {
             SettingsViewModel.ModelOption(id: $0.id, displayName: $0.displayName, tier: $0.tier)
@@ -74,33 +77,6 @@ final class AppContainer {
         NSApp.servicesProvider = servicesProvider
         logger.appLaunched()
     }
-
-    // MARK: Public methods
-
-    #if DEBUG
-    func runFixGrammarSample() {
-        let sampleText = SourceText(
-            content: "I dont know why this happen, can you help me pls? Its very urgent and i need fix it asap.",
-            language: .english,
-            origin: .manual
-        )
-
-        Task { [processTextUseCase, logger] in
-            do {
-                let result = try await processTextUseCase.execute(
-                    text: sampleText,
-                    action: ActionRegistry.all[0],
-                    parameters: ActionParameters()
-                )
-                logger.debugSampleSucceeded(cameFromCache: result.cameFromCache)
-            } catch let error as AppError {
-                logger.debugSampleFailed(error)
-            } catch {
-                logger.debugSampleFailed(.unknown)
-            }
-        }
-    }
-    #endif
 
     // MARK: Private methods
 

@@ -1,4 +1,5 @@
 import AppKit
+import Observation
 import SwiftUI
 
 @MainActor
@@ -11,32 +12,51 @@ final class PanelWindowController: NSObject {
     // MARK: Private properties
 
     private let panel: FloatingPanel
-    private let contentViewModel: PanelContentViewModel
-    private var captureTask: Task<Void, Never>?
+    private let viewModel: PanelViewModel
 
     // MARK: Static
 
     private static let width: CGFloat = 560
+    private static let minimumHeight: CGFloat = 80
     private static let topScreenFraction: CGFloat = 0.28
     private static let animationDuration: TimeInterval = 0.12
 
     // MARK: Init
 
-    init(logger: AppLogger, captureTextUseCase: CaptureTextUseCase) {
+    init(
+        logger: AppLogger,
+        captureTextUseCase: CaptureTextUseCase,
+        processTextUseCase: ProcessTextUseCase,
+        deliverResultUseCase: DeliverResultUseCase,
+        preferences: PreferenceStoring
+    ) {
         self.logger = logger
         panel = FloatingPanel(contentRect: NSRect(x: 0, y: 0, width: Self.width, height: 0))
-        contentViewModel = PanelContentViewModel(captureTextUseCase: captureTextUseCase, logger: logger)
+        viewModel = PanelViewModel(
+            captureTextUseCase: captureTextUseCase,
+            processTextUseCase: processTextUseCase,
+            deliverResultUseCase: deliverResultUseCase,
+            preferences: preferences,
+            logger: logger
+        )
         super.init()
     }
 
     // MARK: Lifecycle
 
     func start() {
-        let hostingView = NSHostingView(rootView: PanelRootView(viewModel: contentViewModel))
+        viewModel.onRequestClose = { [weak self] in self?.hide() }
+        viewModel.onOpenSettingsRequested = {
+            NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
+        }
+
+        let hostingView = NSHostingView(rootView: PanelRootView(viewModel: viewModel))
         hostingView.autoresizingMask = [.width, .height]
         panel.contentView = hostingView
         panel.delegate = self
         panel.onCancel = { [weak self] in self?.hide() }
+
+        observeContentChanges()
     }
 
     // MARK: Public methods
@@ -52,27 +72,47 @@ final class PanelWindowController: NSObject {
     func show() {
         guard panel.isVisible == false else { return }
         reveal()
-        beginCapture()
+        viewModel.beginCapture()
     }
 
     func present(_ sourceText: SourceText) {
-        captureTask?.cancel()
-        captureTask = nil
-        contentViewModel.present(sourceText)
+        viewModel.present(sourceText)
         guard panel.isVisible == false else { return }
         reveal()
     }
 
     func hide() {
         guard panel.isVisible else { return }
-        captureTask?.cancel()
-        captureTask = nil
+        viewModel.prepareForDismissal()
         panel.orderOut(nil)
-        contentViewModel.reset()
         logger.panelHidden(windowCount: NSApp.windows.count)
     }
 
     // MARK: Private methods
+
+    private func observeContentChanges() {
+        withObservationTracking {
+            _ = viewModel.state
+        } onChange: { [weak self] in
+            Task { @MainActor in
+                self?.resizeToFitContent()
+                self?.observeContentChanges()
+            }
+        }
+    }
+
+    private func resizeToFitContent() {
+        guard panel.isVisible else { return }
+        var frame = panel.frame
+        let topEdge = frame.maxY
+        let newHeight = contentHeight()
+        guard abs(frame.height - newHeight) > 0.5 else { return }
+
+        frame.size.height = newHeight
+        frame.origin.y = topEdge - newHeight
+        let animate = NSWorkspace.shared.accessibilityDisplayShouldReduceMotion == false
+        panel.setFrame(frame, display: true, animate: animate)
+    }
 
     private func reveal() {
         let frame = frameCenteredOnMouseScreen()
@@ -101,13 +141,6 @@ final class PanelWindowController: NSObject {
         logger.panelShown(windowCount: NSApp.windows.count)
     }
 
-    private func beginCapture() {
-        captureTask?.cancel()
-        captureTask = Task { [weak self] in
-            await self?.contentViewModel.beginCapture()
-        }
-    }
-
     private func frameCenteredOnMouseScreen() -> NSRect {
         let mouseLocation = NSEvent.mouseLocation
         let screen = NSScreen.screens.first(where: { $0.frame.contains(mouseLocation) }) ?? NSScreen.main
@@ -121,9 +154,10 @@ final class PanelWindowController: NSObject {
     }
 
     private func contentHeight() -> CGFloat {
-        guard let contentView = panel.contentView else { return 0 }
+        guard let contentView = panel.contentView else { return Self.minimumHeight }
         contentView.setFrameSize(NSSize(width: Self.width, height: contentView.frame.height))
-        return contentView.fittingSize.height
+        contentView.layoutSubtreeIfNeeded()
+        return max(contentView.fittingSize.height, Self.minimumHeight)
     }
 }
 

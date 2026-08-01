@@ -14,14 +14,6 @@ struct VerbaApp: App {
             Button("About Verba") {
                 NSApplication.shared.orderFrontStandardAboutPanel(nil)
             }
-            #if DEBUG
-            if let container = appDelegate.container {
-                Divider()
-                Button("DEBUG: Run Fix grammar on sample") {
-                    container.runFixGrammarSample()
-                }
-            }
-            #endif
             Divider()
             Button("Quit") {
                 NSApplication.shared.terminate(nil)

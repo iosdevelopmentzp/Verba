@@ -24,6 +24,12 @@ struct SourcePreviewView: View {
                         .padding(.vertical, 2)
                         .background(.quaternary, in: Capsule())
                 }
+
+                if sourceText.content.count > InputLimits.softWarn {
+                    Text("long input, higher cost")
+                        .font(.caption2)
+                        .foregroundStyle(.orange)
+                }
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)

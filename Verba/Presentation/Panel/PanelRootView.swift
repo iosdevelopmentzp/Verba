@@ -1,39 +1,155 @@
 import SwiftUI
 
 struct PanelRootView: View {
-    @Bindable var viewModel: PanelContentViewModel
-    @FocusState private var isDraftFocused: Bool
+    let viewModel: PanelViewModel
+
+    @FocusState private var isRootFocused: Bool
 
     var body: some View {
         content
             .padding(24)
             .frame(maxWidth: .infinity, alignment: .leading)
+            .focusable()
+            .focused($isRootFocused)
+            .onKeyPress { press in viewModel.handle(press) }
+            .onAppear { isRootFocused = true }
+            .onChange(of: isManualEntry) { _, newValue in
+                guard newValue == false else { return }
+                isRootFocused = true
+            }
+            .overlay(alignment: .bottom) { hudOverlay }
     }
 
     @ViewBuilder
     private var content: some View {
-        if let sourceText = viewModel.sourceText {
-            SourcePreviewView(sourceText: sourceText)
-        } else {
-            manualEntry
+        switch viewModel.state {
+        case .capturing:
+            capturingView
+
+        case .manualEntry:
+            ManualEntryView(viewModel: viewModel)
+
+        case .picking(let source, let selectedIndex):
+            withSource(source) {
+                ActionPickerView(sourceText: source, selectedIndex: selectedIndex) { action in
+                    viewModel.activate(action, source: source)
+                }
+            }
+
+        case .parameterPicking(let source, let action, let selectedIndex):
+            withSource(source) {
+                ParameterPickerView(
+                    sourceText: source,
+                    action: action,
+                    selectedIndex: selectedIndex
+                ) { index in
+                    viewModel.choose(index, action: action, source: source)
+                }
+            }
+
+        case .running(let source, let action):
+            withSource(source) {
+                RunningView(sourceText: source, action: action)
+            }
+
+        case .result(let source, let action, let result):
+            withSource(source) {
+                ResultView(
+                    sourceText: source,
+                    action: action,
+                    result: result,
+                    onCopyPrimary: { viewModel.copyPrimary() },
+                    onCopyAlternative: { viewModel.copyAlternative(at: $0) },
+                    onRerun: { viewModel.rerun() }
+                )
+            }
+
+        case .failed(let source, _, let error):
+            errorContent(source: source, error: error)
         }
     }
 
-    private var manualEntry: some View {
+    @ViewBuilder
+    private func errorContent(source: SourceText?, error: AppError) -> some View {
+        let errorView = ErrorView(
+            error: error,
+            onRetry: { viewModel.rerun() },
+            onOpenSettings: { viewModel.openSettings() }
+        )
+
+        if let source {
+            withSource(source) { errorView }
+        } else {
+            errorView
+        }
+    }
+
+    private var capturingView: some View {
+        HStack {
+            Spacer()
+            ProgressView()
+                .controlSize(.small)
+            Spacer()
+        }
+        .frame(minHeight: 60)
+    }
+
+    @ViewBuilder
+    private var hudOverlay: some View {
+        if viewModel.isHUDVisible {
+            HUD(message: "Copied")
+                .padding(.bottom, 16)
+                .transition(.opacity)
+                .animation(.easeOut(duration: 0.15), value: viewModel.isHUDVisible)
+        }
+    }
+
+    private var isManualEntry: Bool {
+        guard case .manualEntry = viewModel.state else { return false }
+        return true
+    }
+
+    private func withSource<Content: View>(
+        _ source: SourceText,
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 16) {
+            SourcePreviewView(sourceText: source)
+            Divider()
+            content()
+        }
+    }
+}
+
+private struct ManualEntryView: View {
+    let viewModel: PanelViewModel
+    @FocusState private var isDraftFocused: Bool
+
+    var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Verba")
                 .font(.title2.weight(.semibold))
 
-            TextField("⌘C some text, or type here", text: $viewModel.manualDraft, axis: .vertical)
+            TextField("⌘C some text, or type here", text: draftBinding, axis: .vertical)
                 .textFieldStyle(.plain)
                 .font(.body)
                 .lineLimit(1...5)
                 .focused($isDraftFocused)
 
             Button("Accept") { viewModel.acceptManualEntry() }
-                .keyboardShortcut(.return, modifiers: .command)
                 .controlSize(.small)
+
+            Text("⌘⏎ to accept")
+                .font(.caption2)
+                .foregroundStyle(.tertiary)
         }
         .onAppear { isDraftFocused = true }
+    }
+
+    private var draftBinding: Binding<String> {
+        Binding(
+            get: { viewModel.manualDraft },
+            set: { viewModel.updateManualDraft($0) }
+        )
     }
 }
