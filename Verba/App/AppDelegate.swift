@@ -1,10 +1,12 @@
 import AppKit
+import Observation
 
+@Observable
 final class AppDelegate: NSObject, NSApplicationDelegate {
 
-    // MARK: Private properties
+    // MARK: Public properties
 
-    private var container: AppContainer?
+    private(set) var container: AppContainer?
 
     // MARK: Lifecycle
 

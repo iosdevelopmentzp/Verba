@@ -5,7 +5,6 @@ import SwiftUI
 struct VerbaApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @Environment(\.openSettings) private var openSettings
-    @State private var settingsViewModel = SettingsViewModel()
 
     var body: some Scene {
         MenuBarExtra("Verba", systemImage: "text.badge.checkmark") {
@@ -15,13 +14,24 @@ struct VerbaApp: App {
             Button("About Verba") {
                 NSApplication.shared.orderFrontStandardAboutPanel(nil)
             }
+            #if DEBUG
+            if let container = appDelegate.container {
+                Divider()
+                Button("DEBUG: Run Fix grammar on sample") {
+                    container.runFixGrammarSample()
+                }
+            }
+            #endif
+            Divider()
             Button("Quit") {
                 NSApplication.shared.terminate(nil)
             }
         }
 
         Settings {
-            SettingsView(viewModel: settingsViewModel)
+            if let container = appDelegate.container {
+                SettingsView(viewModel: container.settingsViewModel)
+            }
         }
     }
 }

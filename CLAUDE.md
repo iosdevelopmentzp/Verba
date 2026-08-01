@@ -95,3 +95,14 @@ know only `Domain`; `App` knows everybody.
   type presence without reading the item's data payload and so does not
   trigger the privacy prompt — the same non-prompting property the spec
   asked for, under a different, real name.
+- **Stage 3 — output-token budget raised, reasoning effort set to
+  `minimal`.** HANDOFF.md §6.2 specifies
+  `min(1200, inputTokenEstimate * 2 + 200)`. On the GPT-5 family
+  reasoning tokens are billed against `max_output_tokens` and the
+  budget can be exhausted *before any visible output token is
+  produced* — the response comes back `status: "incomplete"` with
+  `incomplete_details.reason == "max_output_tokens"`. A typical Slack
+  message would have been given ~250 tokens, so the common case was at
+  risk. The formula now floors at 700 and ceilings at 2000, effort is
+  `minimal` rather than `low`, and a truncated response is retried once
+  with double the budget before surfacing `.malformedResponse`.
