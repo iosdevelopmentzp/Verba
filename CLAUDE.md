@@ -53,3 +53,23 @@ know only `Domain`; `App` knows everybody.
 | `add-llm-provider` | Add a new LLM provider alongside OpenAI |
 | `run-and-debug` | Build, run, reset local state, and test error paths |
 | `commit` | Write a Conventional Commit and check for debug markers |
+
+## Deviations
+
+- **Stage 1 — `Presentation/Settings` imports `KeyboardShortcuts`.** The
+  architecture table says `Presentation` may import only `SwiftUI`,
+  `Domain`, and `os`, but HANDOFF.md §14 Stage 1 explicitly places the
+  `KeyboardShortcuts.Recorder` control in `SettingsView.swift`, which
+  requires importing that package there. `KeyboardShortcuts` is a UI-only,
+  no-TCC-permission package (not networking, not persistence, not
+  pasteboard), so `Scripts/check-layers.sh` does not flag it and the spirit
+  of the dependency rule (no `Data`-layer leakage into `Presentation`)
+  still holds. The `KeyboardShortcuts.Name` extension itself lives in
+  `App/HotkeyController.swift`, the single source of truth for the
+  `togglePanel` shortcut name.
+- **Stage 1 — panel appearance animates fade only, not fade+scale.**
+  Scaling the hosting view's layer scales about its bottom-left corner,
+  because AppKit pins a layer-backed `NSView`'s `anchorPoint` to
+  `(0, 0)`. Correcting it fights autoresizing every time the panel's
+  height changes with state. Stage 6 owns the visual pass and can
+  reintroduce a centred scale by animating the window frame instead.
