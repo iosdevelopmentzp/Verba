@@ -4,6 +4,7 @@ struct ErrorView: View {
     let error: AppError
     let onRetry: () -> Void
     let onOpenSettings: () -> Void
+    let onOpenSystemSettings: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -27,9 +28,11 @@ struct ErrorView: View {
         switch error {
         case .missingAPIKey, .unauthorized:
             return Recovery(title: "Open Settings", action: onOpenSettings)
+        case .pasteboardAccessDenied:
+            return Recovery(title: "Open System Settings", action: onOpenSystemSettings)
         case .offline, .timedOut, .rateLimited, .providerUnavailable, .malformedResponse, .unknown:
             return Recovery(title: "Retry", action: onRetry)
-        case .emptyInput, .inputTooLong, .pasteboardAccessDenied, .cancelled:
+        case .emptyInput, .inputTooLong, .cancelled:
             return nil
         }
     }
@@ -41,7 +44,7 @@ struct ErrorView: View {
         case .emptyInput:
             return "Nothing to work with — copy some text first."
         case .inputTooLong(let actual, let limit):
-            return "Text too long — \(actual) characters, limit is \(limit)."
+            return "Text too long — \(actual.formatted()) characters, limit is \(limit.formatted())."
         case .offline:
             return "No internet connection."
         case .timedOut:

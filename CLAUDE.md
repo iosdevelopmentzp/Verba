@@ -129,3 +129,67 @@ know only `Domain`; `App` knows everybody.
   would be fiction. `ErrorView` shows "Still rate limited." Stage 5, which
   owns the full error matrix, can plumb a genuine retry-in-progress
   signal from `Data` to `Presentation` if a live countdown is wanted.
+- **Stage 5 — `ActionResult` gained a `tier: ModelTier` field beyond
+  the exact §5 definition.** Deliverable 4 requires the active model
+  tier to be "visible somewhere... so the user can tell which tier
+  ran." `ModelTier` is a plain Domain enum with no platform
+  dependency, so carrying it alongside the existing `cameFromCache`
+  flag keeps the tier available wherever a result is (cache hit or
+  fresh), without adding a second round-trip or a new protocol just to
+  ask "what tier was this?" after the fact. `ResultView` renders it as
+  a small badge next to the `cached` marker.
+- **Stage 5 — `PasteboardTextSource`/`PanelViewModel` fix: capture
+  errors other than a genuinely-empty clipboard now reach
+  `.failed`.** `PanelViewModel.performCapture()` previously funneled
+  every thrown `AppError` from capture into manual-entry mode,
+  silently discarding `.pasteboardAccessDenied`. It now distinguishes
+  "nothing on the clipboard" (`nil`, still → manual entry) from an
+  actual thrown error (→ `.failed(source: nil, action: nil, error:)`),
+  matching this stage's explicit instruction.
+- **Stage 5 — "Open System Settings" opens
+  `x-apple.systempreferences:com.apple.preference.security?Privacy_Pasteboard`.**
+  HANDOFF.md doesn't name a URL for this pane (pasteboard privacy is a
+  macOS 15.4+ feature, newer than the handoff draft). Confirmed via
+  Apple's own May 2025 pasteboard-privacy preview coverage that this is
+  the pane identifier System Settings itself registers for "Paste from
+  Other Apps." Wired in `PanelWindowController.start()` via
+  `NSWorkspace.shared.open(_:)`, keeping the AppKit call in `App`; the
+  Keychain-item deny/allow toggle itself cannot be scripted from inside
+  the app (`NSPasteboard.accessBehavior` is read-only, per the Stage 2
+  deviation above), so this could not be exercised end-to-end without a
+  human flipping the System Settings toggle by hand — traced by reading
+  `PasteboardTextSource.capture()` and `PanelViewModel.performCapture()`
+  instead.
+- **Stage 5 — `.emptyInput` is unreachable through the shipped panel
+  UI, by design.** `CaptureTextUseCase.make(content:origin:)` — the
+  single choke point behind both pasteboard capture and manual-entry
+  accept — already trims and rejects empty content before a
+  `SourceText` can exist, and this stage's own instructions say
+  genuinely-empty input must keep going to manual entry, not to an
+  error state. `ProcessTextUseCase`'s `emptyInput` guard is therefore a
+  defensive check with no live call path today (verified by reading
+  both call sites), not a bug; `ErrorView` still renders its §10
+  message correctly for the case it were ever reached from a future
+  caller.
+- **Stage 5 — added a "Monthly budget" field to Settings → Provider.**
+  HANDOFF.md §9.3 already specifies this field ("Provider (API key
+  secure field with Test key, model picker, economy toggle, monthly
+  budget)"), but no earlier stage wired it — `PreferenceStoring.monthlyBudgetUSD`
+  existed with no UI, so it could never be changed from its $5 default
+  except by writing an `NSDecimalNumber` directly into `UserDefaults`
+  from code. This stage's budget-warning banner and menu-bar
+  indication are untestable without a way to lower the threshold, so a
+  `TextField` bound through a new `SettingsViewModel.monthlyBudgetUSD`
+  was added — a functional gap-fill already promised by the handoff,
+  not new scope.
+- **Stage 5 — the menu bar's budget indication refreshes on demand,
+  not on a live timer.** `MenuBarViewModel.refresh()` re-reads
+  `UsageMetering.snapshot()` when the label icon first mounts (app
+  launch) and whenever the dropdown content is opened, via SwiftUI's
+  own `.task` view lifecycle — not a recurring poll loop. This avoids
+  adding a new always-on background `Task` for a soft, non-blocking
+  indicator; the in-panel budget banner (which does update live, right
+  after every successful request) is the authoritative, real-time
+  surface for this warning, and Stage 6 owns the full "menu bar
+  dropdown with usage" this can grow into if a live-updating icon is
+  wanted later.

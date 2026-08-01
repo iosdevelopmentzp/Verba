@@ -3,4 +3,5 @@ struct ActionResult: Sendable, Equatable {
     let alternatives: [String]
     let notes: [String]
     let cameFromCache: Bool
+    let tier: ModelTier
 }

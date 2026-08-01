@@ -10,6 +10,7 @@ final class AppContainer {
     let hotkeyController: HotkeyController
     let servicesProvider: ServicesProvider
     let settingsViewModel: SettingsViewModel
+    let menuBarViewModel: MenuBarViewModel
 
     // MARK: Init
 
@@ -46,7 +47,8 @@ final class AppContainer {
             captureTextUseCase: captureTextUseCase,
             processTextUseCase: processTextUseCase,
             deliverResultUseCase: deliverResultUseCase,
-            preferences: preferences
+            preferences: preferences,
+            usageMeter: usageMeter
         )
         hotkeyController = HotkeyController(panelController: panelWindowController, logger: logger)
         servicesProvider = ServicesProvider(
@@ -54,6 +56,7 @@ final class AppContainer {
             captureTextUseCase: captureTextUseCase,
             logger: logger
         )
+        menuBarViewModel = MenuBarViewModel(usageMeter: usageMeter)
 
         let modelOptions = ModelCatalog.models(providerID: ProviderID.openAI).map {
             SettingsViewModel.ModelOption(id: $0.id, displayName: $0.displayName, tier: $0.tier)

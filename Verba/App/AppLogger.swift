@@ -87,10 +87,6 @@ struct AppLogger: Sendable {
         llm.notice("http status=\(status, privacy: .public) byteCount=\(byteCount, privacy: .public)")
     }
 
-    func llmCacheHit(actionID: String, charCount: Int) {
-        llm.notice("cache hit action=\(actionID, privacy: .public) charCount=\(charCount, privacy: .public)")
-    }
-
     func keychainRead(providerID: String, found: Bool) {
         keychain.notice("read providerID=\(providerID, privacy: .public) found=\(found, privacy: .public)")
     }

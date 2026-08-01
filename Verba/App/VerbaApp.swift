@@ -7,16 +7,20 @@ struct VerbaApp: App {
     @Environment(\.openSettings) private var openSettings
 
     var body: some Scene {
-        MenuBarExtra("Verba", systemImage: "text.badge.checkmark") {
-            Button("Settings…") {
-                openSettings()
+        MenuBarExtra {
+            if let container = appDelegate.container {
+                MenuBarView(
+                    viewModel: container.menuBarViewModel,
+                    onOpenSettings: { openSettings() },
+                    onAbout: { NSApplication.shared.orderFrontStandardAboutPanel(nil) },
+                    onQuit: { NSApplication.shared.terminate(nil) }
+                )
             }
-            Button("About Verba") {
-                NSApplication.shared.orderFrontStandardAboutPanel(nil)
-            }
-            Divider()
-            Button("Quit") {
-                NSApplication.shared.terminate(nil)
+        } label: {
+            if let container = appDelegate.container {
+                MenuBarLabelView(viewModel: container.menuBarViewModel)
+            } else {
+                Image(systemName: "text.badge.checkmark")
             }
         }
 

@@ -17,6 +17,7 @@ struct PanelRootView: View {
                 guard newValue == false else { return }
                 isRootFocused = true
             }
+            .overlay(alignment: .top) { budgetBanner }
             .overlay(alignment: .bottom) { hudOverlay }
     }
 
@@ -74,7 +75,8 @@ struct PanelRootView: View {
         let errorView = ErrorView(
             error: error,
             onRetry: { viewModel.rerun() },
-            onOpenSettings: { viewModel.openSettings() }
+            onOpenSettings: { viewModel.openSettings() },
+            onOpenSystemSettings: { viewModel.openSystemSettings() }
         )
 
         if let source {
@@ -101,6 +103,14 @@ struct PanelRootView: View {
                 .padding(.bottom, 16)
                 .transition(.opacity)
                 .animation(.easeOut(duration: 0.15), value: viewModel.isHUDVisible)
+        }
+    }
+
+    @ViewBuilder
+    private var budgetBanner: some View {
+        if viewModel.isOverBudget, let usageSnapshot = viewModel.usageSnapshot {
+            BudgetWarningBanner(snapshot: usageSnapshot)
+                .padding(.top, 10)
         }
     }
 
@@ -151,5 +161,26 @@ private struct ManualEntryView: View {
             get: { viewModel.manualDraft },
             set: { viewModel.updateManualDraft($0) }
         )
+    }
+}
+
+private struct BudgetWarningBanner: View {
+    let snapshot: UsageSnapshot
+
+    var body: some View {
+        Label(message, systemImage: "exclamationmark.triangle.fill")
+            .font(.caption.weight(.medium))
+            .foregroundStyle(.orange)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 6)
+            .background(.regularMaterial, in: Capsule())
+    }
+
+    private var message: String {
+        "Monthly budget exceeded — \(Self.currency(snapshot.costMonthUSD)) of \(Self.currency(snapshot.budgetMonthUSD))"
+    }
+
+    private static func currency(_ value: Decimal) -> String {
+        value.formatted(.currency(code: "USD"))
     }
 }

@@ -33,7 +33,7 @@ struct ProcessTextUseCase: Sendable {
             throw AppError.inputTooLong(actual: trimmed.count, limit: InputLimits.hardMax)
         }
 
-        let tier = preferences.economyMode ? ModelTier.economy : action.tier
+        let tier = ModelTier.effective(for: action, preferences: preferences)
         let identity = textProcessor.cacheIdentity(for: action, tier: tier)
         let key = Self.cacheKey(
             actionID: action.id.rawValue,
@@ -48,7 +48,8 @@ struct ProcessTextUseCase: Sendable {
                 primary: cached.primary,
                 alternatives: cached.alternatives,
                 notes: cached.notes,
-                cameFromCache: true
+                cameFromCache: true,
+                tier: cached.tier
             )
         }
 

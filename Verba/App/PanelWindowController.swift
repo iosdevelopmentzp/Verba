@@ -20,6 +20,9 @@ final class PanelWindowController: NSObject {
     private static let minimumHeight: CGFloat = 80
     private static let topScreenFraction: CGFloat = 0.28
     private static let animationDuration: TimeInterval = 0.12
+    private static let pasteboardPrivacyPaneURL = URL(
+        string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Pasteboard"
+    )!
 
     // MARK: Init
 
@@ -28,7 +31,8 @@ final class PanelWindowController: NSObject {
         captureTextUseCase: CaptureTextUseCase,
         processTextUseCase: ProcessTextUseCase,
         deliverResultUseCase: DeliverResultUseCase,
-        preferences: PreferenceStoring
+        preferences: PreferenceStoring,
+        usageMeter: UsageMetering
     ) {
         self.logger = logger
         panel = FloatingPanel(contentRect: NSRect(x: 0, y: 0, width: Self.width, height: 0))
@@ -37,6 +41,7 @@ final class PanelWindowController: NSObject {
             processTextUseCase: processTextUseCase,
             deliverResultUseCase: deliverResultUseCase,
             preferences: preferences,
+            usageMeter: usageMeter,
             logger: logger
         )
         super.init()
@@ -48,6 +53,9 @@ final class PanelWindowController: NSObject {
         viewModel.onRequestClose = { [weak self] in self?.hide() }
         viewModel.onOpenSettingsRequested = {
             NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
+        }
+        viewModel.onOpenSystemSettingsRequested = {
+            NSWorkspace.shared.open(Self.pasteboardPrivacyPaneURL)
         }
 
         let hostingView = NSHostingView(rootView: PanelRootView(viewModel: viewModel))

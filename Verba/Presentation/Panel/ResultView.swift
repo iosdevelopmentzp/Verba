@@ -36,16 +36,20 @@ struct ResultView: View {
             Text(title)
                 .font(.headline)
 
+            Badge(text: tierLabel)
+
             if result.cameFromCache {
-                Text("cached")
-                    .font(.caption2)
-                    .foregroundStyle(.tertiary)
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 2)
-                    .background(.quaternary, in: Capsule())
+                Badge(text: "cached")
             }
 
             Spacer(minLength: 0)
+        }
+    }
+
+    private var tierLabel: String {
+        switch result.tier {
+        case .standard: return "standard"
+        case .economy: return "economy"
         }
     }
 

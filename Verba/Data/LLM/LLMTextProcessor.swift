@@ -85,7 +85,8 @@ final class LLMTextProcessor: TextProcessing {
                 modelID: identity.modelID,
                 systemPrompt: prompt.systemPrompt,
                 userContent: prompt.userContent,
-                maxOutputTokens: maxOutputTokens
+                maxOutputTokens: maxOutputTokens,
+                tier: tier
             )
 
             logger.llmRequestSucceeded(
@@ -124,7 +125,8 @@ final class LLMTextProcessor: TextProcessing {
         modelID: String,
         systemPrompt: String,
         userContent: String,
-        maxOutputTokens: Int
+        maxOutputTokens: Int,
+        tier: ModelTier
     ) async throws -> (result: ActionResult, inputTokens: Int, outputTokens: Int) {
         do {
             return try await requestWithRetry(
@@ -134,6 +136,7 @@ final class LLMTextProcessor: TextProcessing {
                 systemPrompt: systemPrompt,
                 userContent: userContent,
                 maxOutputTokens: maxOutputTokens,
+                tier: tier,
                 strict: false
             )
         } catch AppError.malformedResponse {
@@ -144,6 +147,7 @@ final class LLMTextProcessor: TextProcessing {
                 systemPrompt: systemPrompt,
                 userContent: userContent,
                 maxOutputTokens: maxOutputTokens,
+                tier: tier,
                 strict: true
             )
         }
@@ -156,6 +160,7 @@ final class LLMTextProcessor: TextProcessing {
         systemPrompt: String,
         userContent: String,
         maxOutputTokens: Int,
+        tier: ModelTier,
         strict: Bool
     ) async throws -> (result: ActionResult, inputTokens: Int, outputTokens: Int) {
         do {
@@ -166,6 +171,7 @@ final class LLMTextProcessor: TextProcessing {
                 systemPrompt: systemPrompt,
                 userContent: userContent,
                 maxOutputTokens: maxOutputTokens,
+                tier: tier,
                 strict: strict
             )
         } catch let error as AppError where retryPolicy.shouldRetry(error) {
@@ -177,6 +183,7 @@ final class LLMTextProcessor: TextProcessing {
                 systemPrompt: systemPrompt,
                 userContent: userContent,
                 maxOutputTokens: maxOutputTokens,
+                tier: tier,
                 strict: strict
             )
         }
@@ -189,6 +196,7 @@ final class LLMTextProcessor: TextProcessing {
         systemPrompt: String,
         userContent: String,
         maxOutputTokens: Int,
+        tier: ModelTier,
         strict: Bool
     ) async throws -> (result: ActionResult, inputTokens: Int, outputTokens: Int) {
         let finalSystemPrompt = strict ? systemPrompt + "\n\n" + Self.strictInstruction : systemPrompt
@@ -224,7 +232,8 @@ final class LLMTextProcessor: TextProcessing {
             primary: payload.primary,
             alternatives: payload.alternatives,
             notes: payload.notes,
-            cameFromCache: false
+            cameFromCache: false,
+            tier: tier
         )
         return (result, response.inputTokens, response.outputTokens)
     }

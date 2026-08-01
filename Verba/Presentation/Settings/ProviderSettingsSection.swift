@@ -17,6 +17,13 @@ struct ProviderSettingsSection: View {
 
             Toggle("Economy mode", isOn: $viewModel.economyMode)
 
+            TextField(
+                "Monthly budget",
+                value: $viewModel.monthlyBudgetUSD,
+                format: .currency(code: "USD")
+            )
+            .textFieldStyle(.roundedBorder)
+
             HStack(spacing: 8) {
                 Button("Test key") { viewModel.testKey() }
                     .disabled(viewModel.keyTestState == .testing)

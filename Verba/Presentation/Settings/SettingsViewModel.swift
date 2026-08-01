@@ -1,3 +1,4 @@
+import Foundation
 import Observation
 import KeyboardShortcuts
 
@@ -39,6 +40,11 @@ final class SettingsViewModel {
     var selectedModelID: String {
         get { preferences.modelID }
         set { preferences.modelID = newValue }
+    }
+
+    var monthlyBudgetUSD: Decimal {
+        get { preferences.monthlyBudgetUSD }
+        set { preferences.monthlyBudgetUSD = newValue }
     }
 
     // MARK: Private properties

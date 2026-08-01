@@ -17,15 +17,14 @@ struct SourcePreviewView: View {
                     .foregroundStyle(.tertiary)
 
                 if case .pasteboard(isReused: true) = sourceText.origin {
-                    Text("reused")
-                        .font(.caption2)
-                        .foregroundStyle(.tertiary)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2)
-                        .background(.quaternary, in: Capsule())
+                    Badge(text: "reused")
                 }
 
-                if sourceText.content.count > InputLimits.softWarn {
+                if sourceText.content.count > InputLimits.hardMax {
+                    Text("exceeds \(InputLimits.hardMax.formatted()) character limit")
+                        .font(.caption2)
+                        .foregroundStyle(.red)
+                } else if sourceText.content.count > InputLimits.softWarn {
                     Text("long input, higher cost")
                         .font(.caption2)
                         .foregroundStyle(.orange)

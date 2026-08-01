@@ -21,15 +21,23 @@ final class PanelViewModel {
     private let processTextUseCase: ProcessTextUseCase
     private let deliverResultUseCase: DeliverResultUseCase
     private let preferences: PreferenceStoring
+    private let usageMeter: UsageMetering
     private let logger: AppLogger
 
     // MARK: Public properties
 
     private(set) var state: PanelState = .capturing
     private(set) var isHUDVisible = false
+    private(set) var usageSnapshot: UsageSnapshot?
 
     var onRequestClose: (() -> Void)?
     var onOpenSettingsRequested: (() -> Void)?
+    var onOpenSystemSettingsRequested: (() -> Void)?
+
+    var isOverBudget: Bool {
+        guard let usageSnapshot else { return false }
+        return usageSnapshot.costMonthUSD > usageSnapshot.budgetMonthUSD
+    }
 
     var manualDraft: String {
         guard case .manualEntry(let draft) = state else { return "" }
@@ -53,12 +61,14 @@ final class PanelViewModel {
         processTextUseCase: ProcessTextUseCase,
         deliverResultUseCase: DeliverResultUseCase,
         preferences: PreferenceStoring,
+        usageMeter: UsageMetering,
         logger: AppLogger
     ) {
         self.captureTextUseCase = captureTextUseCase
         self.processTextUseCase = processTextUseCase
         self.deliverResultUseCase = deliverResultUseCase
         self.preferences = preferences
+        self.usageMeter = usageMeter
         self.logger = logger
     }
 
@@ -132,6 +142,10 @@ final class PanelViewModel {
         onOpenSettingsRequested?()
     }
 
+    func openSystemSettings() {
+        onOpenSystemSettingsRequested?()
+    }
+
     func handle(_ press: KeyPress) -> KeyPress.Result {
         if press.key == .escape {
             cancelAndClose()
@@ -157,6 +171,8 @@ final class PanelViewModel {
     // MARK: Private methods
 
     private func performCapture() async {
+        await refreshBudgetState()
+
         do {
             guard let source = try await captureTextUseCase.execute() else {
                 guard Task.isCancelled == false else { return }
@@ -166,14 +182,20 @@ final class PanelViewModel {
             guard Task.isCancelled == false else { return }
             logCaptured(source)
             state = .picking(source: source, selectedIndex: 0)
+        } catch AppError.cancelled {
+            return
         } catch let error as AppError {
             logger.textCaptureFailed(error)
             guard Task.isCancelled == false else { return }
-            state = .manualEntry(draft: "")
+            state = .failed(source: nil, action: nil, error: error)
         } catch {
             guard Task.isCancelled == false else { return }
-            state = .manualEntry(draft: "")
+            state = .failed(source: nil, action: nil, error: .unknown)
         }
+    }
+
+    private func refreshBudgetState() async {
+        usageSnapshot = await usageMeter.snapshot()
     }
 
     private func logCaptured(_ source: SourceText) {
@@ -195,6 +217,7 @@ final class PanelViewModel {
                 let result = try await processTextUseCase.execute(text: source, action: action, parameters: parameters)
                 guard Task.isCancelled == false else { return }
                 state = .result(source: source, action: action, result: result)
+                await refreshBudgetState()
             } catch AppError.cancelled {
                 return
             } catch let error as AppError {
