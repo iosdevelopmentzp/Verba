@@ -1,0 +1,43 @@
+# UI panel
+
+## `FloatingPanel` invariants
+
+An `NSPanel` subclass:
+
+```swift
+styleMask = [.nonactivatingPanel, .borderless, .fullSizeContentView]
+level = .floating
+collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .transient]
+isFloatingPanel = true
+hidesOnDeactivate = false
+becomesKeyOnlyIfNeeded = false
+isMovableByWindowBackground = false
+override var canBecomeKey: Bool { true }
+override var canBecomeMain: Bool { false }
+```
+
+- Show with `orderFrontRegardless()` then `makeKey()`. **Never** call
+  `NSApp.activate(...)` — the panel must not steal focus from the
+  source app (Slack).
+- Position: horizontally centered on the screen containing the mouse,
+  vertically ~28% from the top. Width 560pt, height fits content,
+  0.12s fade+scale (skip the animation when Reduce Motion is on).
+- Dismiss on: Esc, `resignKey`, a second hotkey press, or a completed
+  copy. Dismissal cancels any in-flight `Task` (see `concurrency.md`).
+- Re-showing reuses the same panel instance — no window leaks. Verify
+  by toggling 20 times and checking `NSApp.windows.count` stays flat.
+
+## Keyboard map
+
+| Key | Where | Effect |
+|---|---|---|
+| `⌃⌥Space` | global | toggle panel |
+| `↑` `↓` | picking | move selection |
+| `⏎` | picking | run the selected action |
+| `1`–`5` | picking, result, failed | run that action directly |
+| `⇧3` / `⇧5` | picking, result | open the tone / level picker |
+| `⏎` | result | copy `primary`, show HUD, close |
+| `⌘1` `⌘2` `⌘3` | result | copy alternative 1/2/3, show HUD, close |
+| `⌘⏎` | manualEntry | accept typed text, go to `picking` |
+| `⌘R` | result, failed | re-run the same action |
+| `⎋` | anywhere | cancel and close |
