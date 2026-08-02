@@ -37,6 +37,7 @@ final class PanelViewModel {
     private(set) var isHUDVisible = false
     private(set) var usageSnapshot: UsageSnapshot?
     private(set) var explanation: ExplanationState?
+    private(set) var isDiffShown: Bool
 
     var onRequestClose: (() -> Void)?
     var onOpenSettingsRequested: (() -> Void)?
@@ -86,6 +87,7 @@ final class PanelViewModel {
         self.preferences = preferences
         self.usageMeter = usageMeter
         self.logger = logger
+        self.isDiffShown = preferences.isDiffVisible
     }
 
     // MARK: Public methods
@@ -239,6 +241,11 @@ final class PanelViewModel {
         explainTask?.cancel()
         explainTask = nil
         explanation = nil
+    }
+
+    func toggleDiff() {
+        isDiffShown.toggle()
+        preferences.isDiffVisible = isDiffShown
     }
 
     func openSettings() {
@@ -530,6 +537,10 @@ final class PanelViewModel {
             explainFixes()
             return .handled
         }
+        if press.modifiers.contains(.command), Self.isD(press), action.supportsDiff {
+            toggleDiff()
+            return .handled
+        }
         if press.key == .leftArrow, press.modifiers.contains(.command) {
             goBackToPicking()
             return .handled
@@ -577,6 +588,10 @@ final class PanelViewModel {
 
     private static func isE(_ press: KeyPress) -> Bool {
         press.characters.lowercased() == "e" || press.key.character.lowercased() == "e"
+    }
+
+    private static func isD(_ press: KeyPress) -> Bool {
+        press.characters.lowercased() == "d" || press.key.character.lowercased() == "d"
     }
 
     private func defaultParameterIndex(for action: TextAction) -> Int {

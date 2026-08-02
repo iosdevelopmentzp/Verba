@@ -7,6 +7,7 @@ protocol PreferenceStoring: AnyObject, Sendable {
     var defaultLevel: LanguageLevel { get set }
     var lastTone: Tone? { get set }
     var lastLevel: LanguageLevel? { get set }
+    var isDiffVisible: Bool { get set }
     var monthlyBudgetUSD: Decimal { get set }
     var launchAtLogin: Bool { get set }
     var hasCompletedOnboarding: Bool { get set }

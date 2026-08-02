@@ -49,12 +49,20 @@ override var canBecomeMain: Bool { false }
   `explanation != nil`, `Esc` dismisses the overlay instead of closing
   the panel, and every other key is swallowed (`.handled`, no-op) so
   input can't leak through to the result screen underneath.
-- Actions with `supportsDiff` always show a word-level diff of source
-  vs. `result.primary` on the result screen (no toggle, no hotkey) via
-  `TextDiff.wordDiff` — removed words struck through in
-  `PanelTheme.diffRemoved`, added words bold in `PanelTheme.diffAdded`.
-  Hidden for `translate` (`supportsDiff: false` — source and result are
-  different languages, a word diff is meaningless there).
+- Actions with `supportsDiff` show a word-level diff (`⌘D` toggle) of
+  source vs. *whichever suggestion is currently highlighted* on the
+  result screen — `ResultView.selectedText` tracks `selectedIndex`
+  across `primary` and the alternatives, so moving the `↑`/`↓`
+  highlight recomputes the diff against that option, not always
+  `primary`. `TextDiff.wordDiff` renders removed words struck through
+  in `PanelTheme.diffRemoved`, added words bold in
+  `PanelTheme.diffAdded`. Hidden for `translate` (`supportsDiff: false`
+  — source and result are different languages, a word diff is
+  meaningless there). The shown/hidden choice persists across restarts
+  via `PreferenceStoring.isDiffVisible` (default `true`) — `PanelViewModel`
+  seeds `isDiffShown` from it at init and writes back on every
+  `toggleDiff()`, the same "remember the last choice" pattern as
+  `lastTone`/`lastLevel`.
 - `SourcePreviewView` carries a "copy" button (⌘C hint + tap) next to
   the character count, wired to `PanelViewModel.copyOriginal()` — a
   single control shared by every state that has a source (`picking`,
@@ -98,5 +106,6 @@ override var canBecomeMain: Bool { false }
 | `⌘R` | result, failed | re-run the same action, bypassing the cache |
 | `⌘←` | parameterPicking, result, failed | back to `picking` with the same source, reselecting the action just being configured/run |
 | `⌘E` | result | open the Explain overlay (fixGrammar only, hidden/no-op elsewhere) |
+| `⌘D` | result | toggle the word-level diff for the highlighted suggestion (actions with `supportsDiff` only), persisted via `PreferenceStoring.isDiffVisible` |
 | `⌘C` | anywhere a source exists | copy the original source text, show HUD (handled via `FloatingPanel.copy(_:)`, not `onKeyPress`) |
 | `⎋` | anywhere | cancel and close |

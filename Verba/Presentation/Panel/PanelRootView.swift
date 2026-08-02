@@ -74,7 +74,9 @@ struct PanelRootView: View {
                     onCopyAlternative: { viewModel.copyAlternative(at: $0) },
                     onRerun: { viewModel.rerun() },
                     onExplain: { viewModel.explainFixes() },
-                    onBack: { viewModel.goBackToPicking() }
+                    onBack: { viewModel.goBackToPicking() },
+                    isDiffShown: viewModel.isDiffShown,
+                    onToggleDiff: { viewModel.toggleDiff() }
                 )
             }
 

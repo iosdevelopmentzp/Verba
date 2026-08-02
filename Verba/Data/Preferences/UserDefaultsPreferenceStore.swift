@@ -38,6 +38,11 @@ final class UserDefaultsPreferenceStore: PreferenceStoring {
         set { defaults.set(newValue?.rawValue, forKey: Keys.lastLevel) }
     }
 
+    var isDiffVisible: Bool {
+        get { defaults.object(forKey: Keys.isDiffVisible) as? Bool ?? true }
+        set { defaults.set(newValue, forKey: Keys.isDiffVisible) }
+    }
+
     var monthlyBudgetUSD: Decimal {
         get {
             guard let stored = defaults.object(forKey: Keys.monthlyBudgetUSD) as? NSDecimalNumber else {
@@ -73,6 +78,7 @@ final class UserDefaultsPreferenceStore: PreferenceStoring {
         static let defaultLevel = "preferences.defaultLevel"
         static let lastTone = "preferences.lastTone"
         static let lastLevel = "preferences.lastLevel"
+        static let isDiffVisible = "preferences.isDiffVisible"
         static let monthlyBudgetUSD = "preferences.monthlyBudgetUSD"
         static let launchAtLogin = "preferences.launchAtLogin"
         static let hasCompletedOnboarding = "preferences.hasCompletedOnboarding"
