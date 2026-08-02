@@ -26,8 +26,10 @@ override var canBecomeMain: Bool { false }
   always light: colors are explicit values, never `.primary` /
   `.secondary` / `.regularMaterial`, which resolve against the system
   appearance and wash out under vibrancy.
-- Dismiss on: Esc, `resignKey`, a second hotkey press, or a completed
-  copy. Dismissal cancels any in-flight `Task` (see `concurrency.md`).
+- Dismiss on: Esc, a second hotkey press, or a completed copy. Losing
+  key status (`resignKey`) does **not** dismiss the panel — it must
+  stay up until the user explicitly closes it. Dismissal cancels any
+  in-flight `Task` (see `concurrency.md`).
 - Re-showing reuses the same panel instance — no window leaks. Verify
   by toggling 20 times and checking `NSApp.windows.count` stays flat.
 

@@ -61,7 +61,6 @@ final class PanelWindowController: NSObject {
         let hostingView = NSHostingView(rootView: PanelRootView(viewModel: viewModel))
         hostingView.autoresizingMask = [.width, .height]
         panel.contentView = hostingView
-        panel.delegate = self
         panel.onCancel = { [weak self] in self?.hide() }
 
         observeContentChanges()
@@ -167,11 +166,5 @@ final class PanelWindowController: NSObject {
         contentView.setFrameSize(NSSize(width: Self.width, height: contentView.frame.height))
         contentView.layoutSubtreeIfNeeded()
         return max(contentView.fittingSize.height, Self.minimumHeight)
-    }
-}
-
-extension PanelWindowController: NSWindowDelegate {
-    func windowDidResignKey(_ notification: Notification) {
-        hide()
     }
 }
