@@ -40,7 +40,7 @@ override var canBecomeMain: Bool { false }
 | `⌃⌥Space` | global | toggle panel |
 | `↑` `↓` | picking | move selection |
 | `⏎` | picking | run the selected action |
-| `1`–`5` | picking, result, failed | run that action directly |
+| `1`–`6` | picking, result, failed | run that action directly |
 | `⇧3` / `⇧5` | picking, result | open the tone / level picker |
 | `⏎` | result | copy `primary`, show HUD |
 | `⌘1` `⌘2` `⌘3` | result | copy alternative 1/2/3, show HUD |

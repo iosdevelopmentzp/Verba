@@ -5,6 +5,7 @@ struct TextAction: Sendable, Identifiable, Equatable {
         case changeTone
         case translate
         case humanize
+        case shorten
     }
 
     let id: Kind

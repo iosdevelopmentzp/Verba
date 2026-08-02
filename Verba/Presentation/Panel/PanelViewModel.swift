@@ -395,13 +395,13 @@ final class PanelViewModel {
     }
 
     private static func numberKey(for press: KeyPress) -> Int? {
-        if let value = press.characters.first?.wholeNumberValue, (1...5).contains(value) {
+        if let value = press.characters.first?.wholeNumberValue, (1...6).contains(value) {
             return value
         }
         if let symbol = press.characters.first, let value = shiftedDigitSymbols[symbol] {
             return value
         }
-        if let value = press.key.character.wholeNumberValue, (1...5).contains(value) {
+        if let value = press.key.character.wholeNumberValue, (1...6).contains(value) {
             return value
         }
         return nil

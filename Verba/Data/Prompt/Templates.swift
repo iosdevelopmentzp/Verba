@@ -18,7 +18,8 @@ enum Templates {
             RephraseTemplate(),
             ChangeToneTemplate(),
             TranslateTemplate(),
-            HumanizeTemplate()
+            HumanizeTemplate(),
+            ShortenTemplate()
         ]
         return Dictionary(uniqueKeysWithValues: templates.map { ($0.id, $0) })
     }()
@@ -96,6 +97,21 @@ private struct HumanizeTemplate: PromptTemplate {
         "moreover", "it's worth noting", tricolons, and other polished-AI tells. Never make it \
         wrong on purpose — meaning and facts must stay intact. Notes name the biggest stylistic \
         changes.
+        """
+    }
+}
+
+private struct ShortenTemplate: PromptTemplate {
+    let id = "shorten"
+    let version = 1
+
+    func systemPrompt(parameters: ActionParameters, language: TextLanguage) -> String {
+        """
+        Cut the message to its essential content. Remove filler, hedging, and redundant \
+        phrases; combine sentences where that reads naturally. Keep every fact, number, name, \
+        link, and instruction the original had — shorten wording, never meaning. primary is the \
+        shortest version that still reads naturally; alternatives may offer one or two lengths \
+        in between the original and primary. Notes may say roughly how much shorter it got.
         """
     }
 }

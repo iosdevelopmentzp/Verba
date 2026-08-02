@@ -44,6 +44,15 @@ enum ActionRegistry {
             templateID: "humanize",
             tier: .standard,
             needsParameters: true
+        ),
+        TextAction(
+            id: .shorten,
+            titleEnglish: "Make shorter",
+            titleRussian: "Сделать короче",
+            numberKey: 6,
+            templateID: "shorten",
+            tier: .standard,
+            needsParameters: false
         )
     ]
 }
