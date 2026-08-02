@@ -229,8 +229,8 @@ final class LLMTextProcessor: TextProcessing {
         let payload = try Self.decodePayload(from: response.rawJSON)
 
         let result = ActionResult(
-            primary: Self.stripEmDash(payload.primary),
-            alternatives: payload.alternatives.map(Self.stripEmDash),
+            primary: Self.sanitize(payload.primary),
+            alternatives: payload.alternatives.map(Self.sanitize),
             notes: payload.notes,
             cameFromCache: false,
             tier: tier
@@ -238,8 +238,17 @@ final class LLMTextProcessor: TextProcessing {
         return (result, response.inputTokens, response.outputTokens)
     }
 
+    private static func sanitize(_ text: String) -> String {
+        Self.stripSemicolons(Self.stripEmDash(text))
+    }
+
     private static func stripEmDash(_ text: String) -> String {
         text.replacingOccurrences(of: "—", with: "-")
+    }
+
+    private static func stripSemicolons(_ text: String) -> String {
+        text.replacingOccurrences(of: "; ", with: ", ")
+            .replacingOccurrences(of: ";", with: ",")
     }
 
     private static func decodePayload(from data: Data) throws -> ActionResultPayload {
