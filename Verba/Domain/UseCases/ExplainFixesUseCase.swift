@@ -12,7 +12,7 @@ struct ExplainFixesUseCase: Sendable {
 
     // MARK: Public methods
 
-    func execute(original: String, corrected: String, notes: [String], language: TextLanguage) async throws -> [String] {
+    func execute(original: String, corrected: String, notes: [String], language: TextLanguage) async throws -> [FixExplanation] {
         try await explainer.explainFixes(original: original, corrected: corrected, notes: notes, language: language)
     }
 }

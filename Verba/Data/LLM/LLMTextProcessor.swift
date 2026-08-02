@@ -38,7 +38,19 @@ final class LLMTextProcessor: TextProcessing, FixExplaining {
         "additionalProperties": false,
         "required": ["explanations"],
         "properties": [
-            "explanations": ["type": "array", "maxItems": 8, "items": ["type": "string"]]
+            "explanations": [
+                "type": "array",
+                "maxItems": 8,
+                "items": [
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": ["title", "detail"],
+                    "properties": [
+                        "title": ["type": "string"],
+                        "detail": ["type": "string"]
+                    ]
+                ]
+            ]
         ]
     ]
 
@@ -128,7 +140,7 @@ final class LLMTextProcessor: TextProcessing, FixExplaining {
         LLMCacheIdentity(modelID: resolvedModelID(for: tier), promptVersion: promptBuilder.promptVersion(for: action))
     }
 
-    func explainFixes(original: String, corrected: String, notes: [String], language: TextLanguage) async throws -> [String] {
+    func explainFixes(original: String, corrected: String, notes: [String], language: TextLanguage) async throws -> [FixExplanation] {
         guard let client = providerRegistry.client(for: preferences.providerID) else {
             throw AppError.unknown
         }
@@ -326,7 +338,7 @@ final class LLMTextProcessor: TextProcessing, FixExplaining {
         systemPrompt: String,
         userContent: String,
         maxOutputTokens: Int
-    ) async throws -> (explanations: [String], inputTokens: Int, outputTokens: Int) {
+    ) async throws -> (explanations: [FixExplanation], inputTokens: Int, outputTokens: Int) {
         do {
             return try await explainSingleAttempt(
                 client: client,
@@ -356,7 +368,7 @@ final class LLMTextProcessor: TextProcessing, FixExplaining {
         systemPrompt: String,
         userContent: String,
         maxOutputTokens: Int
-    ) async throws -> (explanations: [String], inputTokens: Int, outputTokens: Int) {
+    ) async throws -> (explanations: [FixExplanation], inputTokens: Int, outputTokens: Int) {
         let request = LLMRequest(
             modelID: modelID,
             systemPrompt: systemPrompt,
@@ -383,7 +395,10 @@ final class LLMTextProcessor: TextProcessing, FixExplaining {
         guard response.isTruncated == false else { throw AppError.malformedResponse }
 
         let payload = try Self.decodeExplainPayload(from: response.rawJSON)
-        return (payload.explanations.map(Self.sanitize), response.inputTokens, response.outputTokens)
+        let explanations = payload.explanations.map {
+            FixExplanation(title: Self.sanitize($0.title), detail: Self.sanitize($0.detail))
+        }
+        return (explanations, response.inputTokens, response.outputTokens)
     }
 
     private static func decodeExplainPayload(from data: Data) throws -> ExplainPayload {
@@ -422,5 +437,10 @@ private struct ActionResultPayload: Decodable {
 }
 
 private struct ExplainPayload: Decodable {
-    let explanations: [String]
+    struct Item: Decodable {
+        let title: String
+        let detail: String
+    }
+
+    let explanations: [Item]
 }

@@ -52,7 +52,7 @@ struct ExplanationOverlayView: View {
                 ForEach(Array(explanations.enumerated()), id: \.offset) { _, explanation in
                     HStack(alignment: .top, spacing: 8) {
                         Text("•")
-                        Text(explanation)
+                        (Text("\(explanation.title): ").bold() + Text(explanation.detail))
                             .textSelection(.enabled)
                             .fixedSize(horizontal: false, vertical: true)
                     }

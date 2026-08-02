@@ -13,7 +13,7 @@ enum PanelState: Equatable {
 
 enum ExplanationState: Equatable {
     case loading
-    case loaded([String])
+    case loaded([FixExplanation])
     case failed(AppError)
 }
 
