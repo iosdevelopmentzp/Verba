@@ -20,7 +20,10 @@ struct ResultView: View {
         VStack(alignment: .leading, spacing: 14) {
             header
 
-            primaryCard
+            VStack(alignment: .leading, spacing: 4) {
+                primaryCard
+                characterCountLabel(result.primary, color: PanelTheme.textTertiary)
+            }
 
             if result.alternatives.isEmpty == false {
                 alternativesSection
@@ -83,18 +86,22 @@ struct ResultView: View {
             ForEach(Array(result.alternatives.enumerated()), id: \.offset) { index, alternative in
                 let isSelected = selectedIndex == index + 1
 
-                HStack(alignment: .top, spacing: 12) {
-                    KeyCapsuleView(label: "\(index + 1)", isHighlighted: isSelected)
+                VStack(alignment: .leading, spacing: 2) {
+                    HStack(alignment: .top, spacing: 12) {
+                        KeyCapsuleView(label: "\(index + 1)", isHighlighted: isSelected)
 
-                    Text(alternative)
-                        .font(PanelTheme.body)
-                        .foregroundStyle(isSelected ? Color.white : PanelTheme.textSecondary)
-                        .lineSpacing(2)
-                        .lineLimit(isSelected ? nil : Self.alternativeLineLimit)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .textSelection(.enabled)
+                        Text(alternative)
+                            .font(PanelTheme.body)
+                            .foregroundStyle(isSelected ? Color.white : PanelTheme.textSecondary)
+                            .lineSpacing(2)
+                            .lineLimit(isSelected ? nil : Self.alternativeLineLimit)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .textSelection(.enabled)
 
-                    Spacer(minLength: 0)
+                        Spacer(minLength: 0)
+                    }
+
+                    characterCountLabel(alternative, color: isSelected ? Color.white.opacity(0.7) : PanelTheme.textTertiary)
                 }
                 .padding(.vertical, 6)
                 .padding(.horizontal, 8)
@@ -103,6 +110,12 @@ struct ResultView: View {
                 .onTapGesture { onCopyAlternative(index) }
             }
         }
+    }
+
+    private func characterCountLabel(_ text: String, color: Color) -> some View {
+        Text("\(text.count) characters")
+            .font(PanelTheme.caption)
+            .foregroundStyle(color)
     }
 
     private var notesSection: some View {
