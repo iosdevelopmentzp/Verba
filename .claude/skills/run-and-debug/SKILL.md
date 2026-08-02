@@ -15,6 +15,19 @@ xcodebuild -project Verba.xcodeproj -scheme Verba -configuration Debug build
 
 The app has no Dock icon; look for the menu bar item.
 
+## Build a copy to run outside Xcode
+
+```
+bash Scripts/build-release.sh
+```
+
+Produces `build/Release/Verba.app` and `Verba.zip`. Ad-hoc signed only
+— there's no paid Apple Developer account, so no Developer ID
+signature and no notarization. Copying the app to another Mac (or the
+same Mac, after it picks up a quarantine flag from AirDrop/cloud sync)
+needs a one-time Gatekeeper bypass on that machine: right-click →
+Open → Open, or `xattr -cr /path/to/Verba.app` if that still refuses.
+
 ## Reset local state
 
 - **Onboarding + preferences:**
