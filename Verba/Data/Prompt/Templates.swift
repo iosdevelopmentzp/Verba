@@ -8,7 +8,8 @@ enum Templates {
     "alternatives" holds up to 3 genuinely different phrasings, or an empty array. "notes" \
     holds up to 4 very short bullets naming what changed, in the language of the input text. \
     Preserve the author's meaning, names, links, code, and formatting. Never add greetings, \
-    sign-offs, or emoji that were not in the input.
+    sign-offs, or emoji that were not in the input. Do not use semicolons in "primary" or \
+    "alternatives" — split into two sentences or use a comma instead.
     """
 
     static let all: [String: PromptTemplate] = {
@@ -25,7 +26,7 @@ enum Templates {
 
 private struct FixGrammarTemplate: PromptTemplate {
     let id = "fixGrammar"
-    let version = 1
+    let version = 2
 
     func systemPrompt(parameters: ActionParameters, language: TextLanguage) -> String {
         """
@@ -40,7 +41,7 @@ private struct FixGrammarTemplate: PromptTemplate {
 
 private struct RephraseTemplate: PromptTemplate {
     let id = "rephrase"
-    let version = 1
+    let version = 2
 
     func systemPrompt(parameters: ActionParameters, language: TextLanguage) -> String {
         """
@@ -54,7 +55,7 @@ private struct RephraseTemplate: PromptTemplate {
 
 private struct ChangeToneTemplate: PromptTemplate {
     let id = "changeTone"
-    let version = 1
+    let version = 2
 
     func systemPrompt(parameters: ActionParameters, language: TextLanguage) -> String {
         let tone = parameters.tone?.rawValue ?? Tone.formal.rawValue
@@ -69,7 +70,7 @@ private struct ChangeToneTemplate: PromptTemplate {
 
 private struct TranslateTemplate: PromptTemplate {
     let id = "translate"
-    let version = 1
+    let version = 2
 
     func systemPrompt(parameters: ActionParameters, language: TextLanguage) -> String {
         """
@@ -84,7 +85,7 @@ private struct TranslateTemplate: PromptTemplate {
 
 private struct HumanizeTemplate: PromptTemplate {
     let id = "humanize"
-    let version = 1
+    let version = 2
 
     func systemPrompt(parameters: ActionParameters, language: TextLanguage) -> String {
         let level = (parameters.level ?? .b2).rawValue.uppercased()
