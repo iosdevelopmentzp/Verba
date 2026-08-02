@@ -193,3 +193,18 @@ know only `Domain`; `App` knows everybody.
   surface for this warning, and Stage 6 owns the full "menu bar
   dropdown with usage" this can grow into if a live-updating icon is
   wanted later.
+- **Stage 6 — the ⌘C synthesis spike was not shipped; auto-capture stays
+  out.** `CGPreflightPostEventAccess()` returns `true` when called from a
+  binary launched by Terminal, but that is inherited TCC attribution from
+  the parent process, not evidence about `Verba.app`. The app bundle is
+  ad-hoc signed (`CODE_SIGN_IDENTITY = "-"`, no paid Apple Developer
+  account), and on macOS 26 WindowServer's `CGXSenderCanSynthesizeEvents()`
+  gate filters synthesized events from binaries without a real signing
+  identity. Rather than ship a toggle that silently does nothing, no
+  synthesis code exists in the tree. Revisit only with a Developer ID
+  certificate; the clipboard path (⌘C by hand) remains the primary capture.
+- **Stage 6 — no raster app icon.** The build has no icon generation
+  tooling and a hand-rolled placeholder would look worse than the system
+  default. `MenuBarExtra` uses the `text.badge.checkmark` SF Symbol, which
+  renders correctly as a template image at menu bar sizes. Add a real
+  `AppIcon` asset set when there is artwork.

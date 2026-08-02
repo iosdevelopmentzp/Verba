@@ -60,3 +60,18 @@ throttled/erroring, or a temporary code change to point `OpenAIClient`
 at a stand-in endpoint. Do not fake a key or synthesize events to force
 these — use the temporary-endpoint technique described above, confirm
 the UI, then revert the temporary change before committing anything.
+
+## Stage 6
+
+| # | Check | Steps | Expected |
+|---|---|---|---|
+| 21 | Onboarding on first launch | Delete the key: `defaults delete com.dmytrovorko.verba hasCompletedOnboarding`, relaunch | "Set up Verba" window appears with four numbered steps |
+| 22 | Onboarding reopen | Menu bar → Setup Guide… | Same window opens on demand |
+| 23 | Onboarding completes once | Press Done, quit, relaunch | Window does not reappear |
+| 24 | Launch at login on | Toggle it on in onboarding, then check System Settings → General → Login Items | Verba is listed |
+| 25 | Launch at login survives reboot | Reboot | Menu bar icon appears without launching manually |
+| 26 | Login item truth over stored flag | Remove Verba in System Settings → Login Items, relaunch the app | Toggle shows off, matching the real status |
+| 27 | Menu bar usage | Run any action, open the menu bar | "Today $X · Month $Y" reflects the request |
+| 28 | Open from menu bar | Menu bar → Open Verba (⌃⌥Space) | Panel appears, same as the hotkey |
+| 29 | Reduce Motion | System Settings → Accessibility → Display → Reduce Motion on, open the panel | Panel appears with no fade and resizes without animating |
+| 30 | Auto-capture absent | Search Settings for an auto-capture toggle | None exists — see the Stage 6 deviation in CLAUDE.md |

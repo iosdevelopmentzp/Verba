@@ -46,30 +46,9 @@ struct ProviderSettingsSection: View {
                 .foregroundStyle(.green)
                 .font(.caption)
         case .failure(let error):
-            Text(Self.message(for: error))
+            Text(ErrorPresentation.message(for: error))
                 .font(.caption)
                 .foregroundStyle(.red)
-        }
-    }
-
-    private static func message(for error: AppError) -> String {
-        switch error {
-        case .missingAPIKey:
-            return "Add your OpenAI API key to get started."
-        case .unauthorized:
-            return "The API key was rejected."
-        case .offline:
-            return "No internet connection."
-        case .timedOut:
-            return "The request timed out."
-        case .rateLimited:
-            return "Rate limited. Try again shortly."
-        case .providerUnavailable(let status):
-            return "OpenAI is having trouble (\(status))."
-        case .malformedResponse:
-            return "Couldn't read the model's response."
-        default:
-            return "Something went wrong."
         }
     }
 }

@@ -1,3 +1,4 @@
+import Foundation
 import Observation
 
 @MainActor
@@ -11,6 +12,8 @@ final class MenuBarViewModel {
     // MARK: Public properties
 
     private(set) var isOverBudget = false
+    private(set) var costToday = "$0.00"
+    private(set) var costMonth = "$0.00"
 
     // MARK: Init
 
@@ -23,5 +26,13 @@ final class MenuBarViewModel {
     func refresh() async {
         let snapshot = await usageMeter.snapshot()
         isOverBudget = snapshot.costMonthUSD > snapshot.budgetMonthUSD
+        costToday = Self.formatted(snapshot.costTodayUSD)
+        costMonth = Self.formatted(snapshot.costMonthUSD)
+    }
+
+    // MARK: Private methods
+
+    private static func formatted(_ amount: Decimal) -> String {
+        amount.formatted(.currency(code: "USD").precision(.fractionLength(2)))
     }
 }

@@ -12,7 +12,9 @@ struct MenuBarLabelView: View {
 
 struct MenuBarView: View {
     let viewModel: MenuBarViewModel
+    let onOpenPanel: () -> Void
     let onOpenSettings: () -> Void
+    let onOpenOnboarding: () -> Void
     let onAbout: () -> Void
     let onQuit: () -> Void
 
@@ -23,7 +25,12 @@ struct MenuBarView: View {
                 Divider()
             }
 
+            Text("Today \(viewModel.costToday) · Month \(viewModel.costMonth)")
+            Divider()
+
+            Button("Open Verba (⌃⌥Space)", action: onOpenPanel)
             Button("Settings…", action: onOpenSettings)
+            Button("Setup Guide…", action: onOpenOnboarding)
             Button("About Verba", action: onAbout)
             Divider()
             Button("Quit", action: onQuit)

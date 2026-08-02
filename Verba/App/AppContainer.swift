@@ -11,6 +11,12 @@ final class AppContainer {
     let servicesProvider: ServicesProvider
     let settingsViewModel: SettingsViewModel
     let menuBarViewModel: MenuBarViewModel
+    let onboardingViewModel: OnboardingViewModel
+    let needsOnboarding: Bool
+
+    // MARK: Private properties
+
+    private let loginItemController: LoginItemController
 
     // MARK: Init
 
@@ -70,11 +76,25 @@ final class AppContainer {
                 await Self.testAPIKey(using: textProcessor)
             }
         )
+
+        let loginItemController = LoginItemController(preferences: preferences, logger: logger)
+        self.loginItemController = loginItemController
+        needsOnboarding = preferences.hasCompletedOnboarding == false
+        onboardingViewModel = OnboardingViewModel(
+            settings: settingsViewModel,
+            preferences: preferences,
+            launchAtLogin: loginItemController.isEnabled,
+            setLaunchAtLogin: { enabled in
+                await loginItemController.setEnabled(enabled)
+                return loginItemController.isEnabled
+            }
+        )
     }
 
     // MARK: Lifecycle
 
     func start() {
+        loginItemController.syncPreferenceOnLaunch()
         panelWindowController.start()
         hotkeyController.start()
         NSApp.servicesProvider = servicesProvider

@@ -99,6 +99,12 @@ struct AppLogger: Sendable {
         keychain.notice("delete providerID=\(providerID, privacy: .public) success=\(success, privacy: .public)")
     }
 
+    func loginItemChanged(requestedEnabled: Bool, succeeded: Bool) {
+        app.notice(
+            "login item requestedEnabled=\(requestedEnabled, privacy: .public) succeeded=\(succeeded, privacy: .public)"
+        )
+    }
+
     func usageRecorded(modelID: String, inputTokens: Int, outputTokens: Int) {
         usage.notice(
             "recorded model=\(modelID, privacy: .public) inputTokens=\(inputTokens, privacy: .public) outputTokens=\(outputTokens, privacy: .public)"

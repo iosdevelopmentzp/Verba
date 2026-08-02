@@ -20,6 +20,16 @@ open Verba/Verba.xcodeproj
 Build and run the `Verba` scheme. The app has no Dock icon or ⌘-Tab entry —
 look for the menu bar icon.
 
+On first launch a setup window walks through four things: your OpenAI API
+key (with a Test key button), the hotkey, what the one-time clipboard
+prompt means, and launch at login. Reopen it any time from the menu bar
+under **Setup Guide…**. The menu bar dropdown also shows today's and this
+month's spend.
+
+Auto-capturing the selection without ⌘C is deliberately not implemented —
+see the Stage 6 deviation in `CLAUDE.md` for why it is not possible on an
+ad-hoc-signed build.
+
 ### Stable local signing (recommended)
 
 The project ships configured for "Sign to Run Locally", which re-derives a
