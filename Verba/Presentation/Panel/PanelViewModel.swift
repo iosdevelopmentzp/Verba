@@ -517,12 +517,16 @@ final class PanelViewModel {
             )
             return .handled
         }
-        if press.key == .return, press.modifiers.contains(.command) == false {
+        if press.key == .return, press.modifiers.contains(.command) {
             copySelected(at: selectedIndex, result: result)
-            if press.modifiers.contains(.shift), let chainedSource = chainedSource(at: selectedIndex, result: result) {
+            if let chainedSource = chainedSource(at: selectedIndex, result: result) {
                 logCaptured(chainedSource)
                 state = .picking(source: chainedSource, selectedIndex: 0)
             }
+            return .handled
+        }
+        if press.key == .return, press.modifiers.contains(.command) == false {
+            copySelected(at: selectedIndex, result: result)
             return .handled
         }
         if press.modifiers.contains(.command), let numberKey = Self.numberKey(for: press), (1...3).contains(numberKey) {
