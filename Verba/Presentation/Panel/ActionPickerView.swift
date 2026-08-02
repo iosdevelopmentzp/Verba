@@ -25,17 +25,9 @@ private struct ActionRowView: View {
         HStack(spacing: 12) {
             KeyCapsuleView(label: "\(action.numberKey)", isHighlighted: isSelected)
 
-            VStack(alignment: .leading, spacing: 1) {
-                Text(title)
-                    .font(PanelTheme.prominent)
-                    .foregroundStyle(isSelected ? Color.white : PanelTheme.textPrimary)
-
-                if action.needsParameters {
-                    Text("⇧\(action.numberKey) to choose \(parameterName)")
-                        .font(PanelTheme.caption)
-                        .foregroundStyle(isSelected ? Color.white.opacity(0.75) : PanelTheme.textSecondary)
-                }
-            }
+            Text(title)
+                .font(PanelTheme.prominent)
+                .foregroundStyle(isSelected ? Color.white : PanelTheme.textPrimary)
 
             Spacer(minLength: 0)
         }
@@ -46,13 +38,5 @@ private struct ActionRowView: View {
 
     private var title: String {
         language == .russian ? action.titleRussian : action.titleEnglish
-    }
-
-    private var parameterName: String {
-        switch action.id {
-        case .changeTone: return "tone"
-        case .humanize: return "level"
-        default: return "options"
-        }
     }
 }

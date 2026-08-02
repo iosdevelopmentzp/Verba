@@ -84,7 +84,7 @@ struct ResultView: View {
                 let isSelected = selectedIndex == index + 1
 
                 HStack(alignment: .top, spacing: 12) {
-                    KeyCapsuleView(label: "⌘\(index + 1)", isHighlighted: isSelected)
+                    KeyCapsuleView(label: "\(index + 1)", isHighlighted: isSelected)
 
                     Text(alternative)
                         .font(PanelTheme.body)
