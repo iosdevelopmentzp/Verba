@@ -38,6 +38,7 @@ struct ResultView: View {
         HStack(spacing: 8) {
             Text(title)
                 .font(PanelTheme.title)
+                .foregroundStyle(PanelTheme.textPrimary)
 
             Badge(text: tierLabel)
 
@@ -52,6 +53,7 @@ struct ResultView: View {
     private var primaryCard: some View {
         Text(result.primary)
             .font(PanelTheme.prominent)
+            .foregroundStyle(PanelTheme.textPrimary)
             .lineSpacing(3)
             .lineLimit(Self.primaryLineLimit)
             .fixedSize(horizontal: false, vertical: true)
@@ -79,7 +81,7 @@ struct ResultView: View {
 
                     Text(alternative)
                         .font(PanelTheme.body)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(PanelTheme.textSecondary)
                         .lineSpacing(2)
                         .lineLimit(Self.alternativeLineLimit)
                         .fixedSize(horizontal: false, vertical: true)
@@ -104,7 +106,7 @@ struct ResultView: View {
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 .font(PanelTheme.caption)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(PanelTheme.textSecondary)
             }
         }
         .padding(.horizontal, 2)
@@ -123,7 +125,7 @@ struct ResultView: View {
             Spacer(minLength: 0)
         }
         .font(PanelTheme.caption)
-        .foregroundStyle(.secondary)
+        .foregroundStyle(PanelTheme.textSecondary)
     }
 
     private var title: String {

@@ -14,6 +14,7 @@ struct ErrorView: View {
 
                 Text(message)
                     .font(PanelTheme.prominent)
+                    .foregroundStyle(PanelTheme.textPrimary)
                     .fixedSize(horizontal: false, vertical: true)
             }
 

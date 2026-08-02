@@ -203,6 +203,25 @@ know only `Domain`; `App` knows everybody.
   identity. Rather than ship a toggle that silently does nothing, no
   synthesis code exists in the tree. Revisit only with a Developer ID
   certificate; the clipboard path (⌘C by hand) remains the primary capture.
+- **Visual pass — the panel is always light, and never uses semantic
+  colors or materials.** The panel shipped rendering in the system dark
+  appearance at 10–13pt with `.regularMaterial` behind it, which the user
+  reported as unreadably low contrast. `FloatingPanel` now forces
+  `NSAppearance(named: .aqua)` and every panel color is an explicit value
+  in `PanelTheme` — `Color.primary`/`.secondary` and `.regularMaterial`
+  are banned inside the panel because vibrancy blends foreground text
+  toward the background and inverts the intended hierarchy (verified: a
+  `.secondary` label rendered darker than a `.primary` one over material).
+  Settings, onboarding, and the menu bar are ordinary windows and still
+  follow the system appearance.
+- **Visual pass — result text was truncated to one line because the
+  panel measured its height before the width was known.**
+  `contentHeight()` reads `contentView.fittingSize`, whose layout pass
+  proposes an unconstrained width, so a `Text` reported its single-line
+  ideal height and was then clipped to it. `PanelRootView` now carries
+  `.frame(width: PanelTheme.width)`, so measurement wraps exactly as the
+  final render does; multi-line `Text`s also carry
+  `.fixedSize(horizontal: false, vertical: true)`.
 - **Stage 6 — no raster app icon.** The build has no icon generation
   tooling and a hand-rolled placeholder would look worse than the system
   default. `MenuBarExtra` uses the `text.badge.checkmark` SF Symbol, which

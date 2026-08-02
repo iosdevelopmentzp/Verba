@@ -10,6 +10,7 @@ struct ParameterPickerView: View {
         VStack(alignment: .leading, spacing: 12) {
             Text(title)
                 .font(PanelTheme.title)
+                .foregroundStyle(PanelTheme.textPrimary)
 
             VStack(alignment: .leading, spacing: 3) {
                 ForEach(Array(optionTitles.enumerated()), id: \.offset) { index, optionTitle in
@@ -20,7 +21,7 @@ struct ParameterPickerView: View {
 
                         Text(optionTitle)
                             .font(PanelTheme.prominent)
-                            .foregroundStyle(isSelected ? Color.white : Color.primary)
+                            .foregroundStyle(isSelected ? Color.white : PanelTheme.textPrimary)
 
                         Spacer(minLength: 0)
                     }

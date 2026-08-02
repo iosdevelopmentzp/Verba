@@ -22,10 +22,14 @@ enum PanelTheme {
 
     // MARK: Colors
 
-    static let surface = Color.black.opacity(0.04)
-    static let hairline = Color.black.opacity(0.09)
-    static let keyCap = Color.black.opacity(0.07)
+    static let background = Color(white: 0.99)
+    static let surface = Color(white: 0.955)
+    static let hairline = Color.black.opacity(0.10)
+    static let keyCap = Color.black.opacity(0.06)
     static let selection = Color.accentColor
+    static let textPrimary = Color(white: 0.10)
+    static let textSecondary = Color(white: 0.38)
+    static let textTertiary = Color(white: 0.55)
 
     // MARK: Shapes
 

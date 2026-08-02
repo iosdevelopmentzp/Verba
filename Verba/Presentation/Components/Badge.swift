@@ -6,7 +6,7 @@ struct Badge: View {
     var body: some View {
         Text(text)
             .font(PanelTheme.caption)
-            .foregroundStyle(.secondary)
+            .foregroundStyle(PanelTheme.textSecondary)
             .padding(.horizontal, 8)
             .padding(.vertical, 3)
             .background(PanelTheme.keyCap, in: Capsule())

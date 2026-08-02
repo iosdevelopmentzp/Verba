@@ -12,6 +12,7 @@ struct RunningView: View {
 
                 Text(title)
                     .font(PanelTheme.title)
+                    .foregroundStyle(PanelTheme.textPrimary)
             }
 
             HStack(spacing: 8) {
@@ -19,7 +20,7 @@ struct RunningView: View {
                 Text("to cancel")
             }
             .font(PanelTheme.caption)
-            .foregroundStyle(.secondary)
+            .foregroundStyle(PanelTheme.textSecondary)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }

@@ -28,12 +28,12 @@ private struct ActionRowView: View {
             VStack(alignment: .leading, spacing: 1) {
                 Text(title)
                     .font(PanelTheme.prominent)
-                    .foregroundStyle(isSelected ? Color.white : Color.primary)
+                    .foregroundStyle(isSelected ? Color.white : PanelTheme.textPrimary)
 
                 if action.needsParameters {
                     Text("⇧\(action.numberKey) to choose \(parameterName)")
                         .font(PanelTheme.caption)
-                        .foregroundStyle(isSelected ? Color.white.opacity(0.75) : Color.secondary)
+                        .foregroundStyle(isSelected ? Color.white.opacity(0.75) : PanelTheme.textSecondary)
                 }
             }
 

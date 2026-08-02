@@ -20,8 +20,12 @@ override var canBecomeMain: Bool { false }
   `NSApp.activate(...)` — the panel must not steal focus from the
   source app (Slack).
 - Position: horizontally centered on the screen containing the mouse,
-  vertically ~28% from the top. Width 560pt, height fits content,
-  0.12s fade+scale (skip the animation when Reduce Motion is on).
+  vertically ~28% from the top. Width `PanelTheme.width`, height fits
+  content, 0.12s fade (skip the animation when Reduce Motion is on).
+- Every metric, font, and color comes from `PanelTheme`. The panel is
+  always light: colors are explicit values, never `.primary` /
+  `.secondary` / `.regularMaterial`, which resolve against the system
+  appearance and wash out under vibrancy.
 - Dismiss on: Esc, `resignKey`, a second hotkey press, or a completed
   copy. Dismissal cancels any in-flight `Task` (see `concurrency.md`).
 - Re-showing reuses the same panel instance — no window leaks. Verify

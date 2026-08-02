@@ -9,7 +9,7 @@ struct PanelRootView: View {
         content
             .padding(PanelTheme.contentPadding)
             .frame(width: PanelTheme.width, alignment: .leading)
-            .background(.regularMaterial, in: PanelTheme.panelShape)
+            .background(PanelTheme.background, in: PanelTheme.panelShape)
             .overlay { PanelTheme.panelShape.strokeBorder(PanelTheme.hairline, lineWidth: 1) }
             .focusable()
             .focusEffectDisabled()
@@ -142,10 +142,12 @@ private struct ManualEntryView: View {
         VStack(alignment: .leading, spacing: 14) {
             Text("Verba")
                 .font(.system(size: 19, weight: .semibold))
+                .foregroundStyle(PanelTheme.textPrimary)
 
             TextField("⌘C some text, or type here", text: draftBinding, axis: .vertical)
                 .textFieldStyle(.plain)
                 .font(PanelTheme.prominent)
+                .foregroundStyle(PanelTheme.textPrimary)
                 .lineLimit(1...6)
                 .focused($isDraftFocused)
                 .padding(12)
@@ -158,7 +160,7 @@ private struct ManualEntryView: View {
 
                 Text("⌘⏎ to accept")
                     .font(PanelTheme.caption)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(PanelTheme.textSecondary)
             }
         }
         .onAppear { isDraftFocused = true }
@@ -181,7 +183,7 @@ private struct BudgetWarningBanner: View {
             .foregroundStyle(.orange)
             .padding(.horizontal, 12)
             .padding(.vertical, 6)
-            .background(.regularMaterial, in: Capsule())
+            .background(PanelTheme.background, in: Capsule())
             .overlay { Capsule().strokeBorder(PanelTheme.hairline, lineWidth: 1) }
     }
 

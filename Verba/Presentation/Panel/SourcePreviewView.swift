@@ -6,17 +6,17 @@ struct SourcePreviewView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(sourceText.content)
-                .font(PanelTheme.body)
-                .foregroundStyle(.secondary)
+                .font(PanelTheme.secondary)
+                .foregroundStyle(PanelTheme.textSecondary)
                 .lineSpacing(2)
-                .lineLimit(3)
+                .lineLimit(2)
                 .truncationMode(.tail)
                 .fixedSize(horizontal: false, vertical: true)
 
             HStack(spacing: 8) {
                 Text("\(sourceText.content.count) characters")
                     .font(PanelTheme.caption.monospacedDigit())
-                    .foregroundStyle(.tertiary)
+                    .foregroundStyle(PanelTheme.textTertiary)
 
                 if case .pasteboard(isReused: true) = sourceText.origin {
                     Badge(text: "reused")
