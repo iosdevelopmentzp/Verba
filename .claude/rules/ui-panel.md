@@ -43,7 +43,7 @@ override var canBecomeMain: Bool { false }
 | `1`–`6` | picking, result, failed | run that action directly; `3` / `5` (change tone / humanize) always open the parameter picker instead, preselected to the last tone/level chosen |
 | `↑` `↓` | result | move the highlight across `primary` and its alternatives |
 | `⏎` | result | copy the highlighted option, show HUD |
-| `⇧⏎` | result | copy the highlighted option, then go back to `picking` with the same captured text |
+| `⇧⏎` | result | copy the highlighted option, then go back to `picking` with *that highlighted option* (not the original capture) as the new source, origin `.chained` |
 | `⌘1` `⌘2` `⌘3` | result | copy alternative 1/2/3 directly, show HUD |
 | `⌘⏎` | manualEntry | accept typed text, go to `picking` |
 | `⌘R` | result, failed | re-run the same action |

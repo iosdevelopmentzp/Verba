@@ -265,11 +265,19 @@ final class PanelViewModel {
     }
 
     private func copySelected(at index: Int, result: ActionResult) {
-        if index == 0 {
-            copyToPasteboard(result.primary)
-        } else if result.alternatives.indices.contains(index - 1) {
-            copyToPasteboard(result.alternatives[index - 1])
-        }
+        guard let text = Self.text(at: index, result: result) else { return }
+        copyToPasteboard(text)
+    }
+
+    private func chainedSource(at index: Int, result: ActionResult) -> SourceText? {
+        guard let text = Self.text(at: index, result: result) else { return nil }
+        return captureTextUseCase.make(content: text, origin: .chained)
+    }
+
+    private static func text(at index: Int, result: ActionResult) -> String? {
+        if index == 0 { return result.primary }
+        guard result.alternatives.indices.contains(index - 1) else { return nil }
+        return result.alternatives[index - 1]
     }
 
     private func openParameterPicker(action: TextAction, source: SourceText) {
@@ -390,8 +398,9 @@ final class PanelViewModel {
         }
         if press.key == .return, press.modifiers.contains(.command) == false {
             copySelected(at: selectedIndex, result: result)
-            if press.modifiers.contains(.shift) {
-                state = .picking(source: source, selectedIndex: 0)
+            if press.modifiers.contains(.shift), let chainedSource = chainedSource(at: selectedIndex, result: result) {
+                logCaptured(chainedSource)
+                state = .picking(source: chainedSource, selectedIndex: 0)
             }
             return .handled
         }
@@ -477,6 +486,7 @@ final class PanelViewModel {
         case .pasteboard(let isReused): return isReused ? "pasteboard(reused)" : "pasteboard"
         case .service: return "service"
         case .manual: return "manual"
+        case .chained: return "chained"
         }
     }
 }

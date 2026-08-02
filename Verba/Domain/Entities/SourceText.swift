@@ -3,6 +3,7 @@ struct SourceText: Sendable, Equatable {
         case pasteboard(isReused: Bool)
         case service
         case manual
+        case chained
     }
 
     let content: String
