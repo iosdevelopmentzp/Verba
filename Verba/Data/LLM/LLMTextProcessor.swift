@@ -247,8 +247,7 @@ final class LLMTextProcessor: TextProcessing {
     }
 
     private static func stripSemicolons(_ text: String) -> String {
-        text.replacingOccurrences(of: "; ", with: ", ")
-            .replacingOccurrences(of: ";", with: ",")
+        text.replacingOccurrences(of: ";", with: ",")
     }
 
     private static func decodePayload(from data: Data) throws -> ActionResultPayload {
