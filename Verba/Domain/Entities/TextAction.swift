@@ -16,4 +16,5 @@ struct TextAction: Sendable, Identifiable, Equatable {
     let tier: ModelTier
     let needsParameters: Bool
     let supportsExplanation: Bool
+    let supportsDiff: Bool
 }

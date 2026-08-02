@@ -28,6 +28,16 @@ final class UserDefaultsPreferenceStore: PreferenceStoring {
         set { defaults.set(newValue.rawValue, forKey: Keys.defaultLevel) }
     }
 
+    var lastTone: Tone? {
+        get { defaults.string(forKey: Keys.lastTone).flatMap(Tone.init(rawValue:)) }
+        set { defaults.set(newValue?.rawValue, forKey: Keys.lastTone) }
+    }
+
+    var lastLevel: LanguageLevel? {
+        get { defaults.string(forKey: Keys.lastLevel).flatMap(LanguageLevel.init(rawValue:)) }
+        set { defaults.set(newValue?.rawValue, forKey: Keys.lastLevel) }
+    }
+
     var monthlyBudgetUSD: Decimal {
         get {
             guard let stored = defaults.object(forKey: Keys.monthlyBudgetUSD) as? NSDecimalNumber else {
@@ -61,6 +71,8 @@ final class UserDefaultsPreferenceStore: PreferenceStoring {
         static let modelID = "preferences.modelID"
         static let economyMode = "preferences.economyMode"
         static let defaultLevel = "preferences.defaultLevel"
+        static let lastTone = "preferences.lastTone"
+        static let lastLevel = "preferences.lastLevel"
         static let monthlyBudgetUSD = "preferences.monthlyBudgetUSD"
         static let launchAtLogin = "preferences.launchAtLogin"
         static let hasCompletedOnboarding = "preferences.hasCompletedOnboarding"

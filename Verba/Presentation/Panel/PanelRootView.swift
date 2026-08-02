@@ -43,7 +43,8 @@ struct PanelRootView: View {
                     sourceText: source,
                     selectedIndex: selectedIndex,
                     onActivate: { action in viewModel.activate(action, source: source) },
-                    onEdit: { viewModel.editCurrentSource() }
+                    onEdit: { viewModel.editCurrentSource() },
+                    onCopyOriginal: { viewModel.copyOriginal() }
                 )
             }
 
@@ -54,7 +55,8 @@ struct PanelRootView: View {
                     action: action,
                     selectedIndex: selectedIndex,
                     onChoose: { index in viewModel.choose(index, action: action, source: source) },
-                    onBack: { viewModel.goBackToPicking() }
+                    onBack: { viewModel.goBackToPicking() },
+                    onCopyOriginal: { viewModel.copyOriginal() }
                 )
             }
 
@@ -74,7 +76,10 @@ struct PanelRootView: View {
                     onCopyAlternative: { viewModel.copyAlternative(at: $0) },
                     onRerun: { viewModel.rerun() },
                     onExplain: { viewModel.explainFixes() },
-                    onBack: { viewModel.goBackToPicking() }
+                    onBack: { viewModel.goBackToPicking() },
+                    onCopyOriginal: { viewModel.copyOriginal() },
+                    isDiffShown: viewModel.isDiffShown,
+                    onToggleDiff: { viewModel.toggleDiff() }
                 )
             }
 

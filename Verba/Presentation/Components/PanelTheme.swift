@@ -30,6 +30,8 @@ enum PanelTheme {
     static let textPrimary = Color(white: 0.10)
     static let textSecondary = Color(white: 0.38)
     static let textTertiary = Color(white: 0.55)
+    static let diffRemoved = Color(red: 0.75, green: 0.15, blue: 0.15)
+    static let diffAdded = Color(red: 0.10, green: 0.5, blue: 0.20)
 
     // MARK: Shapes
 

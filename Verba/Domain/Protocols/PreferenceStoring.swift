@@ -5,6 +5,8 @@ protocol PreferenceStoring: AnyObject, Sendable {
     var modelID: String { get set }
     var economyMode: Bool { get set }
     var defaultLevel: LanguageLevel { get set }
+    var lastTone: Tone? { get set }
+    var lastLevel: LanguageLevel? { get set }
     var monthlyBudgetUSD: Decimal { get set }
     var launchAtLogin: Bool { get set }
     var hasCompletedOnboarding: Bool { get set }

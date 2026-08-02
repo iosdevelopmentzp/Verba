@@ -37,10 +37,12 @@ final class PanelViewModel {
     private(set) var isHUDVisible = false
     private(set) var usageSnapshot: UsageSnapshot?
     private(set) var explanation: ExplanationState?
+    private(set) var isDiffShown = false
 
     var onRequestClose: (() -> Void)?
     var onOpenSettingsRequested: (() -> Void)?
     var onOpenSystemSettingsRequested: (() -> Void)?
+    var onCopyCompleted: (() -> Void)?
     var maxContentHeight: CGFloat?
 
     var isOverBudget: Bool {
@@ -58,8 +60,6 @@ final class PanelViewModel {
     private var task: Task<Void, Never>?
     private var explainTask: Task<Void, Never>?
     private var currentParameters = ActionParameters()
-    private var lastTone: Tone?
-    private var lastLevel: LanguageLevel?
 
     // MARK: Static
 
@@ -95,6 +95,7 @@ final class PanelViewModel {
         task?.cancel()
         isHUDVisible = false
         dismissExplanation()
+        isDiffShown = false
         state = .capturing
 
         task = Task { [weak self] in
@@ -115,6 +116,7 @@ final class PanelViewModel {
         task = nil
         isHUDVisible = false
         dismissExplanation()
+        isDiffShown = false
         state = .capturing
     }
 
@@ -165,8 +167,8 @@ final class PanelViewModel {
     func choose(_ optionIndex: Int, action: TextAction, source: SourceText) {
         let parameters = Self.parameters(for: action, optionIndex: optionIndex)
         switch action.id {
-        case .changeTone: lastTone = parameters.tone
-        case .humanize: lastLevel = parameters.level
+        case .changeTone: preferences.lastTone = parameters.tone
+        case .humanize: preferences.lastLevel = parameters.level
         default: break
         }
         run(action: action, source: source, parameters: parameters, bypassCache: false)
@@ -189,6 +191,17 @@ final class PanelViewModel {
     func copyAlternative(at index: Int) {
         guard case .result(_, _, let result, _) = state, result.alternatives.indices.contains(index) else { return }
         copyToPasteboard(result.alternatives[index])
+    }
+
+    func copyOriginal() {
+        switch state {
+        case .picking(let source, _), .parameterPicking(let source, _, _), .result(let source, _, _, _):
+            copyToPasteboard(source.content)
+        case .failed(.some(let source), _, _):
+            copyToPasteboard(source.content)
+        default:
+            break
+        }
     }
 
     func explainFixes() {
@@ -226,6 +239,10 @@ final class PanelViewModel {
         explainTask?.cancel()
         explainTask = nil
         explanation = nil
+    }
+
+    func toggleDiff() {
+        isDiffShown.toggle()
     }
 
     func openSettings() {
@@ -305,6 +322,7 @@ final class PanelViewModel {
     private func run(action: TextAction, source: SourceText, parameters: ActionParameters, bypassCache: Bool) {
         task?.cancel()
         currentParameters = parameters
+        isDiffShown = false
         state = .running(source: source, action: action)
 
         task = Task { [weak self] in
@@ -338,6 +356,7 @@ final class PanelViewModel {
             await deliverResultUseCase.execute(text)
             guard Task.isCancelled == false else { return }
             isHUDVisible = true
+            onCopyCompleted?()
             try? await Task.sleep(for: Self.hudDisplayDuration)
             guard Task.isCancelled == false else { return }
             isHUDVisible = false
@@ -420,6 +439,10 @@ final class PanelViewModel {
             editCurrentSource()
             return .handled
         }
+        if press.modifiers.contains(.command), Self.isC(press) {
+            copyOriginal()
+            return .handled
+        }
         if let numberKey = Self.numberKey(for: press), press.modifiers.contains(.command) == false {
             runDirectly(numberKey: numberKey, source: source)
             return .handled
@@ -457,6 +480,10 @@ final class PanelViewModel {
         }
         if press.key == .leftArrow, press.modifiers.contains(.command) {
             goBackToPicking()
+            return .handled
+        }
+        if press.modifiers.contains(.command), Self.isC(press) {
+            copyOriginal()
             return .handled
         }
         if let numberKey = Self.numberKey(for: press),
@@ -516,8 +543,16 @@ final class PanelViewModel {
             explainFixes()
             return .handled
         }
+        if press.modifiers.contains(.command), Self.isD(press), action.supportsDiff {
+            toggleDiff()
+            return .handled
+        }
         if press.key == .leftArrow, press.modifiers.contains(.command) {
             goBackToPicking()
+            return .handled
+        }
+        if press.modifiers.contains(.command), Self.isC(press) {
+            copyOriginal()
             return .handled
         }
         if let numberKey = Self.numberKey(for: press), press.modifiers.contains(.command) == false {
@@ -534,6 +569,10 @@ final class PanelViewModel {
         }
         if press.key == .leftArrow, press.modifiers.contains(.command) {
             goBackToPicking()
+            return .handled
+        }
+        if press.modifiers.contains(.command), Self.isC(press) {
+            copyOriginal()
             return .handled
         }
         guard let source else { return .ignored }
@@ -565,12 +604,20 @@ final class PanelViewModel {
         press.characters.lowercased() == "e" || press.key.character.lowercased() == "e"
     }
 
+    private static func isC(_ press: KeyPress) -> Bool {
+        press.characters.lowercased() == "c" || press.key.character.lowercased() == "c"
+    }
+
+    private static func isD(_ press: KeyPress) -> Bool {
+        press.characters.lowercased() == "d" || press.key.character.lowercased() == "d"
+    }
+
     private func defaultParameterIndex(for action: TextAction) -> Int {
         switch action.id {
         case .changeTone:
-            return Tone.allCases.firstIndex(of: lastTone ?? .formal) ?? 0
+            return Tone.allCases.firstIndex(of: preferences.lastTone ?? .formal) ?? 0
         case .humanize:
-            return LanguageLevel.allCases.firstIndex(of: lastLevel ?? preferences.defaultLevel) ?? 0
+            return LanguageLevel.allCases.firstIndex(of: preferences.lastLevel ?? preferences.defaultLevel) ?? 0
         default:
             return 0
         }

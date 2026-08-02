@@ -49,6 +49,23 @@ override var canBecomeMain: Bool { false }
   `explanation != nil`, `Esc` dismisses the overlay instead of closing
   the panel, and every other key is swallowed (`.handled`, no-op) so
   input can't leak through to the result screen underneath.
+- Actions with `supportsDiff` show a "show diff"/"hide diff" toggle on
+  the result screen (`⌘D`, footer + tap), rendering a word-level diff
+  of source vs. `result.primary` via `TextDiff.wordDiff` — removed
+  words struck through in `PanelTheme.diffRemoved`, added words bold in
+  `PanelTheme.diffAdded`. Hidden for `translate` (`supportsDiff: false`
+  — source and result are different languages, a word diff is
+  meaningless there).
+- `⌘C` copies the original captured/edited source text untouched, from
+  `picking`, `parameterPicking`, `result`, and `failed` (when a source
+  exists) — an escape hatch for "actually I wanted the original back."
+  Every successful copy (`⏎`, `⌘1`-`⌘3`, `⌘C`) plays a short system
+  sound (`NSSound(named: "Tink")`) via `PanelViewModel.onCopyCompleted`,
+  alongside the existing "Copied" HUD.
+- `changeTone`/`humanize`'s parameter picker preselects whichever tone/
+  level was chosen last time (`PreferenceStoring.lastTone`/`lastLevel`,
+  persisted across restarts), falling back to `.formal`/
+  `preferences.defaultLevel` the first time there is no prior choice.
 
 ## Keyboard map
 
@@ -68,4 +85,6 @@ override var canBecomeMain: Bool { false }
 | `⌘R` | result, failed | re-run the same action, bypassing the cache |
 | `⌘←` | parameterPicking, result, failed | back to `picking` with the same source, reselecting the action just being configured/run |
 | `⌘E` | result | open the Explain overlay (fixGrammar only, hidden/no-op elsewhere) |
+| `⌘D` | result | toggle the word-level diff (actions with `supportsDiff` only) |
+| `⌘C` | picking, parameterPicking, result, failed | copy the original source text, show HUD |
 | `⎋` | anywhere | cancel and close |

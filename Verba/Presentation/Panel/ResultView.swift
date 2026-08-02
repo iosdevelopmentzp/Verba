@@ -10,6 +10,9 @@ struct ResultView: View {
     let onRerun: () -> Void
     let onExplain: () -> Void
     let onBack: () -> Void
+    let onCopyOriginal: () -> Void
+    let isDiffShown: Bool
+    let onToggleDiff: () -> Void
 
     // MARK: Static
 
@@ -25,6 +28,13 @@ struct ResultView: View {
             VStack(alignment: .leading, spacing: 4) {
                 primaryCard
                 characterCountLabel(result.primary, color: PanelTheme.textTertiary)
+            }
+
+            if canShowDiff {
+                diffToggle
+                if isDiffShown {
+                    diffSection
+                }
             }
 
             if result.alternatives.isEmpty == false {
@@ -139,6 +149,45 @@ struct ResultView: View {
         action.supportsExplanation && result.notes.isEmpty == false
     }
 
+    private var canShowDiff: Bool {
+        action.supportsDiff && result.primary != sourceText.content
+    }
+
+    private var diffToggle: some View {
+        HStack(spacing: 8) {
+            KeyCapsuleView(label: "⌘D", isHighlighted: false)
+            Text(isDiffShown ? "hide diff" : "show diff")
+                .contentShape(Rectangle())
+                .onTapGesture { onToggleDiff() }
+
+            Spacer(minLength: 0)
+        }
+        .font(PanelTheme.caption)
+        .foregroundStyle(PanelTheme.textSecondary)
+    }
+
+    private var diffSection: some View {
+        TextDiff.wordDiff(original: sourceText.content, revised: result.primary)
+            .reduce(Text("")) { partial, segment in
+                switch segment {
+                case .equal(let words):
+                    return partial + Text(words + " ").foregroundColor(PanelTheme.textSecondary)
+                case .removed(let words):
+                    return partial + Text(words + " ").strikethrough().foregroundColor(PanelTheme.diffRemoved)
+                case .added(let words):
+                    return partial + Text(words + " ").bold().foregroundColor(PanelTheme.diffAdded)
+                }
+            }
+            .font(PanelTheme.body)
+            .lineSpacing(2)
+            .textSelection(.enabled)
+            .fixedSize(horizontal: false, vertical: true)
+            .padding(10)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(PanelTheme.surface, in: PanelTheme.cardShape)
+            .overlay { PanelTheme.cardShape.strokeBorder(PanelTheme.hairline, lineWidth: 1) }
+    }
+
     private var footer: some View {
         HStack(spacing: 8) {
             KeyCapsuleView(label: "⏎", isHighlighted: false)
@@ -160,6 +209,11 @@ struct ResultView: View {
             Text("back")
                 .contentShape(Rectangle())
                 .onTapGesture { onBack() }
+
+            KeyCapsuleView(label: "⌘C", isHighlighted: false)
+            Text("copy original")
+                .contentShape(Rectangle())
+                .onTapGesture { onCopyOriginal() }
 
             Spacer(minLength: 0)
         }

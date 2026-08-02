@@ -24,6 +24,7 @@ final class PanelWindowController: NSObject {
     private static let pasteboardPrivacyPaneURL = URL(
         string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Pasteboard"
     )!
+    private static let copySoundName = NSSound.Name("Tink")
 
     // MARK: Init
 
@@ -59,6 +60,9 @@ final class PanelWindowController: NSObject {
         }
         viewModel.onOpenSystemSettingsRequested = {
             NSWorkspace.shared.open(Self.pasteboardPrivacyPaneURL)
+        }
+        viewModel.onCopyCompleted = {
+            NSSound(named: Self.copySoundName)?.play()
         }
 
         let hostingView = NSHostingView(rootView: PanelRootView(viewModel: viewModel))
