@@ -50,16 +50,21 @@ override var canBecomeMain: Bool { false }
   the panel, and every other key is swallowed (`.handled`, no-op) so
   input can't leak through to the result screen underneath.
 - Actions with `supportsDiff` show a word-level diff (`⌘D` toggle) of
-  source vs. *whichever suggestion is currently highlighted* on the
-  result screen — `ResultView.selectedText` tracks `selectedIndex`
-  across `primary` and the alternatives, so moving the `↑`/`↓`
-  highlight recomputes the diff against that option, not always
-  `primary`. `TextDiff.wordDiff` renders removed words struck through
-  in `PanelTheme.diffRemoved`, added words bold in
-  `PanelTheme.diffAdded`. Hidden for `translate` (`supportsDiff: false`
-  — source and result are different languages, a word diff is
-  meaningless there). The shown/hidden choice persists across restarts
-  via `PreferenceStoring.isDiffVisible` (default `true`) — `PanelViewModel`
+  source vs. *whichever suggestion is currently highlighted*, rendered
+  directly under that suggestion — inside the primary card's block
+  when `primary` is selected, inside that specific alternative's row
+  when an alternative is selected — so it moves with the `↑`/`↓`
+  highlight instead of sitting in one fixed spot. `ResultView.diffToggle(isHighlighted:)`
+  takes a highlight flag because the alternative case renders on top
+  of that row's `PanelTheme.selection` background (same reason
+  `KeyCapsuleView.isHighlighted` exists) while the primary case sits
+  on the plain panel background below `primaryCard`'s own card.
+  `TextDiff.wordDiff` renders removed words struck through in
+  `PanelTheme.diffRemoved`, added words bold in `PanelTheme.diffAdded`.
+  Hidden for `translate` (`supportsDiff: false` — source and result
+  are different languages, a word diff is meaningless there). The
+  shown/hidden choice persists across restarts via
+  `PreferenceStoring.isDiffVisible` (default `true`) — `PanelViewModel`
   seeds `isDiffShown` from it at init and writes back on every
   `toggleDiff()`, the same "remember the last choice" pattern as
   `lastTone`/`lastLevel`.

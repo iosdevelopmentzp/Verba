@@ -27,12 +27,12 @@ struct ResultView: View {
             VStack(alignment: .leading, spacing: 4) {
                 primaryCard
                 characterCountLabel(result.primary, color: PanelTheme.textTertiary)
-            }
 
-            if canShowDiff {
-                diffToggle
-                if isDiffShown {
-                    diffSection
+                if isPrimarySelected, canShowDiff(for: result.primary) {
+                    diffToggle(isHighlighted: false)
+                    if isDiffShown {
+                        diffSection(for: result.primary)
+                    }
                 }
             }
 
@@ -113,6 +113,13 @@ struct ResultView: View {
                     }
 
                     characterCountLabel(alternative, color: isSelected ? Color.white.opacity(0.7) : PanelTheme.textTertiary)
+
+                    if isSelected, canShowDiff(for: alternative) {
+                        diffToggle(isHighlighted: true)
+                        if isDiffShown {
+                            diffSection(for: alternative)
+                        }
+                    }
                 }
                 .padding(.vertical, 6)
                 .padding(.horizontal, 8)
@@ -148,20 +155,13 @@ struct ResultView: View {
         action.supportsExplanation && result.notes.isEmpty == false
     }
 
-    private var selectedText: String {
-        guard selectedIndex > 0, result.alternatives.indices.contains(selectedIndex - 1) else {
-            return result.primary
-        }
-        return result.alternatives[selectedIndex - 1]
+    private func canShowDiff(for text: String) -> Bool {
+        action.supportsDiff && text != sourceText.content
     }
 
-    private var canShowDiff: Bool {
-        action.supportsDiff && selectedText != sourceText.content
-    }
-
-    private var diffToggle: some View {
+    private func diffToggle(isHighlighted: Bool) -> some View {
         HStack(spacing: 8) {
-            KeyCapsuleView(label: "⌘D", isHighlighted: false)
+            KeyCapsuleView(label: "⌘D", isHighlighted: isHighlighted)
             Text(isDiffShown ? "hide diff" : "show diff")
                 .contentShape(Rectangle())
                 .onTapGesture { onToggleDiff() }
@@ -169,11 +169,11 @@ struct ResultView: View {
             Spacer(minLength: 0)
         }
         .font(PanelTheme.caption)
-        .foregroundStyle(PanelTheme.textSecondary)
+        .foregroundStyle(isHighlighted ? Color.white.opacity(0.85) : PanelTheme.textSecondary)
     }
 
-    private var diffSection: some View {
-        TextDiff.wordDiff(original: sourceText.content, revised: selectedText)
+    private func diffSection(for text: String) -> some View {
+        TextDiff.wordDiff(original: sourceText.content, revised: text)
             .reduce(Text("")) { partial, segment in
                 switch segment {
                 case .equal(let words):
