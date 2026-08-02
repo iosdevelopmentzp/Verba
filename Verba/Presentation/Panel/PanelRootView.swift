@@ -52,10 +52,10 @@ struct PanelRootView: View {
                 ParameterPickerView(
                     sourceText: source,
                     action: action,
-                    selectedIndex: selectedIndex
-                ) { index in
-                    viewModel.choose(index, action: action, source: source)
-                }
+                    selectedIndex: selectedIndex,
+                    onChoose: { index in viewModel.choose(index, action: action, source: source) },
+                    onBack: { viewModel.goBackToPicking() }
+                )
             }
 
         case .running(let source, let action):
@@ -73,7 +73,8 @@ struct PanelRootView: View {
                     onCopyPrimary: { viewModel.copyPrimary() },
                     onCopyAlternative: { viewModel.copyAlternative(at: $0) },
                     onRerun: { viewModel.rerun() },
-                    onExplain: { viewModel.explainFixes() }
+                    onExplain: { viewModel.explainFixes() },
+                    onBack: { viewModel.goBackToPicking() }
                 )
             }
 

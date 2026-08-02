@@ -5,6 +5,7 @@ struct ParameterPickerView: View {
     let action: TextAction
     let selectedIndex: Int
     let onChoose: (Int) -> Void
+    let onBack: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -32,7 +33,22 @@ struct ParameterPickerView: View {
                     .onTapGesture { onChoose(index) }
                 }
             }
+
+            footer
         }
+    }
+
+    private var footer: some View {
+        HStack(spacing: 8) {
+            KeyCapsuleView(label: "⌘←", isHighlighted: false)
+            Text("back")
+                .contentShape(Rectangle())
+                .onTapGesture { onBack() }
+
+            Spacer(minLength: 0)
+        }
+        .font(PanelTheme.caption)
+        .foregroundStyle(PanelTheme.textSecondary)
     }
 
     private var title: String {

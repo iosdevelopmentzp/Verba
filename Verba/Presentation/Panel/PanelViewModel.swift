@@ -135,6 +135,25 @@ final class PanelViewModel {
         state = .manualEntry(draft: source.content)
     }
 
+    func goBackToPicking() {
+        let backTo: (source: SourceText, action: TextAction)?
+        switch state {
+        case .parameterPicking(let source, let action, _):
+            backTo = (source, action)
+        case .result(let source, let action, _, _):
+            backTo = (source, action)
+        case .failed(.some(let source), .some(let action), _):
+            backTo = (source, action)
+        default:
+            backTo = nil
+        }
+        guard let backTo else { return }
+
+        task?.cancel()
+        dismissExplanation()
+        state = .picking(source: backTo.source, selectedIndex: Self.index(of: backTo.action))
+    }
+
     func activate(_ action: TextAction, source: SourceText) {
         if action.needsParameters {
             openParameterPicker(action: action, source: source)
@@ -436,6 +455,10 @@ final class PanelViewModel {
             choose(selectedIndex, action: action, source: source)
             return .handled
         }
+        if press.key == .leftArrow, press.modifiers.contains(.command) {
+            goBackToPicking()
+            return .handled
+        }
         if let numberKey = Self.numberKey(for: press),
            press.modifiers.contains(.shift) == false,
            press.modifiers.contains(.command) == false,
@@ -493,6 +516,10 @@ final class PanelViewModel {
             explainFixes()
             return .handled
         }
+        if press.key == .leftArrow, press.modifiers.contains(.command) {
+            goBackToPicking()
+            return .handled
+        }
         if let numberKey = Self.numberKey(for: press), press.modifiers.contains(.command) == false {
             runDirectly(numberKey: numberKey, source: source)
             return .handled
@@ -503,6 +530,10 @@ final class PanelViewModel {
     private func handleFailed(_ press: KeyPress, source: SourceText?, action: TextAction?) -> KeyPress.Result {
         if press.modifiers.contains(.command), Self.isR(press) {
             rerun()
+            return .handled
+        }
+        if press.key == .leftArrow, press.modifiers.contains(.command) {
+            goBackToPicking()
             return .handled
         }
         guard let source else { return .ignored }
@@ -564,6 +595,10 @@ final class PanelViewModel {
         case .humanize: return LanguageLevel.allCases.count
         default: return 1
         }
+    }
+
+    private static func index(of action: TextAction) -> Int {
+        ActionRegistry.all.firstIndex(where: { $0.id == action.id }) ?? 0
     }
 
     private static func originDescription(_ origin: SourceText.Origin) -> String {

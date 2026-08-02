@@ -66,5 +66,6 @@ override var canBecomeMain: Bool { false }
 | `⇥` | manualEntry | accept typed/edited text, go to `picking` |
 | `⏎` | manualEntry | insert a newline (self-managed via `updateManualDraft`, not native `TextField` passthrough) |
 | `⌘R` | result, failed | re-run the same action, bypassing the cache |
+| `⌘←` | parameterPicking, result, failed | back to `picking` with the same source, reselecting the action just being configured/run |
 | `⌘E` | result | open the Explain overlay (fixGrammar only, hidden/no-op elsewhere) |
 | `⎋` | anywhere | cancel and close |

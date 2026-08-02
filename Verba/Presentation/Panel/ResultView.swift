@@ -9,6 +9,7 @@ struct ResultView: View {
     let onCopyAlternative: (Int) -> Void
     let onRerun: () -> Void
     let onExplain: () -> Void
+    let onBack: () -> Void
 
     // MARK: Static
 
@@ -154,6 +155,11 @@ struct ResultView: View {
                     .contentShape(Rectangle())
                     .onTapGesture { onExplain() }
             }
+
+            KeyCapsuleView(label: "⌘←", isHighlighted: false)
+            Text("back")
+                .contentShape(Rectangle())
+                .onTapGesture { onBack() }
 
             Spacer(minLength: 0)
         }
