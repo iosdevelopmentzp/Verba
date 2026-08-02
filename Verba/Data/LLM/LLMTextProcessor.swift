@@ -229,13 +229,17 @@ final class LLMTextProcessor: TextProcessing {
         let payload = try Self.decodePayload(from: response.rawJSON)
 
         let result = ActionResult(
-            primary: payload.primary,
-            alternatives: payload.alternatives,
+            primary: Self.stripEmDash(payload.primary),
+            alternatives: payload.alternatives.map(Self.stripEmDash),
             notes: payload.notes,
             cameFromCache: false,
             tier: tier
         )
         return (result, response.inputTokens, response.outputTokens)
+    }
+
+    private static func stripEmDash(_ text: String) -> String {
+        text.replacingOccurrences(of: "—", with: "-")
     }
 
     private static func decodePayload(from data: Data) throws -> ActionResultPayload {
