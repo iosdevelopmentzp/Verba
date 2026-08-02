@@ -4,6 +4,7 @@ struct ResultView: View {
     let sourceText: SourceText
     let action: TextAction
     let result: ActionResult
+    let selectedIndex: Int
     let onCopyPrimary: () -> Void
     let onCopyAlternative: (Int) -> Void
     let onRerun: () -> Void
@@ -50,17 +51,21 @@ struct ResultView: View {
         }
     }
 
+    private var isPrimarySelected: Bool {
+        selectedIndex == 0
+    }
+
     private var primaryCard: some View {
         Text(result.primary)
             .font(PanelTheme.prominent)
-            .foregroundStyle(PanelTheme.textPrimary)
+            .foregroundStyle(isPrimarySelected ? Color.white : PanelTheme.textPrimary)
             .lineSpacing(3)
             .lineLimit(Self.primaryLineLimit)
             .fixedSize(horizontal: false, vertical: true)
             .textSelection(.enabled)
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(12)
-            .background(PanelTheme.surface, in: PanelTheme.cardShape)
+            .background(isPrimarySelected ? PanelTheme.selection : PanelTheme.surface, in: PanelTheme.cardShape)
             .overlay { PanelTheme.cardShape.strokeBorder(PanelTheme.hairline, lineWidth: 1) }
             .contentShape(Rectangle())
             .onTapGesture { onCopyPrimary() }
@@ -76,12 +81,14 @@ struct ResultView: View {
     private var alternativesSection: some View {
         VStack(alignment: .leading, spacing: 4) {
             ForEach(Array(result.alternatives.enumerated()), id: \.offset) { index, alternative in
+                let isSelected = selectedIndex == index + 1
+
                 HStack(alignment: .top, spacing: 12) {
-                    KeyCapsuleView(label: "⌘\(index + 1)", isHighlighted: false)
+                    KeyCapsuleView(label: "⌘\(index + 1)", isHighlighted: isSelected)
 
                     Text(alternative)
                         .font(PanelTheme.body)
-                        .foregroundStyle(PanelTheme.textSecondary)
+                        .foregroundStyle(isSelected ? Color.white : PanelTheme.textSecondary)
                         .lineSpacing(2)
                         .lineLimit(Self.alternativeLineLimit)
                         .fixedSize(horizontal: false, vertical: true)
@@ -91,6 +98,7 @@ struct ResultView: View {
                 }
                 .padding(.vertical, 6)
                 .padding(.horizontal, 8)
+                .background(isSelected ? PanelTheme.selection : Color.clear, in: PanelTheme.rowShape)
                 .contentShape(Rectangle())
                 .onTapGesture { onCopyAlternative(index) }
             }

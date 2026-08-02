@@ -7,7 +7,7 @@ enum PanelState: Equatable {
     case picking(source: SourceText, selectedIndex: Int)
     case parameterPicking(source: SourceText, action: TextAction, selectedIndex: Int)
     case running(source: SourceText, action: TextAction)
-    case result(source: SourceText, action: TextAction, result: ActionResult)
+    case result(source: SourceText, action: TextAction, result: ActionResult, selectedIndex: Int)
     case failed(source: SourceText?, action: TextAction?, error: AppError)
 }
 
@@ -48,6 +48,8 @@ final class PanelViewModel {
 
     private var task: Task<Void, Never>?
     private var currentParameters = ActionParameters()
+    private var lastTone: Tone?
+    private var lastLevel: LanguageLevel?
 
     // MARK: Static
 
@@ -115,16 +117,26 @@ final class PanelViewModel {
     }
 
     func activate(_ action: TextAction, source: SourceText) {
-        run(action: action, source: source, parameters: Self.defaultParameters(for: action, preferences: preferences))
+        if action.needsParameters {
+            openParameterPicker(action: action, source: source)
+        } else {
+            run(action: action, source: source, parameters: ActionParameters())
+        }
     }
 
     func choose(_ optionIndex: Int, action: TextAction, source: SourceText) {
-        run(action: action, source: source, parameters: Self.parameters(for: action, optionIndex: optionIndex))
+        let parameters = Self.parameters(for: action, optionIndex: optionIndex)
+        switch action.id {
+        case .changeTone: lastTone = parameters.tone
+        case .humanize: lastLevel = parameters.level
+        default: break
+        }
+        run(action: action, source: source, parameters: parameters)
     }
 
     func rerun() {
         switch state {
-        case .result(let source, let action, _), .failed(.some(let source), .some(let action), _):
+        case .result(let source, let action, _, _), .failed(.some(let source), .some(let action), _):
             run(action: action, source: source, parameters: currentParameters)
         default:
             break
@@ -132,12 +144,12 @@ final class PanelViewModel {
     }
 
     func copyPrimary() {
-        guard case .result(_, _, let result) = state else { return }
+        guard case .result(_, _, let result, _) = state else { return }
         copyToPasteboard(result.primary)
     }
 
     func copyAlternative(at index: Int) {
-        guard case .result(_, _, let result) = state, result.alternatives.indices.contains(index) else { return }
+        guard case .result(_, _, let result, _) = state, result.alternatives.indices.contains(index) else { return }
         copyToPasteboard(result.alternatives[index])
     }
 
@@ -164,8 +176,8 @@ final class PanelViewModel {
             return handlePicking(press, source: source, selectedIndex: selectedIndex)
         case .parameterPicking(let source, let action, let selectedIndex):
             return handleParameterPicking(press, source: source, action: action, selectedIndex: selectedIndex)
-        case .result(let source, let action, let result):
-            return handleResult(press, source: source, action: action, result: result)
+        case .result(let source, let action, let result, let selectedIndex):
+            return handleResult(press, source: source, action: action, result: result, selectedIndex: selectedIndex)
         case .failed(let source, let action, _):
             return handleFailed(press, source: source, action: action)
         }
@@ -219,7 +231,7 @@ final class PanelViewModel {
             do {
                 let result = try await processTextUseCase.execute(text: source, action: action, parameters: parameters)
                 guard Task.isCancelled == false else { return }
-                state = .result(source: source, action: action, result: result)
+                state = .result(source: source, action: action, result: result, selectedIndex: 0)
                 await refreshBudgetState()
             } catch AppError.cancelled {
                 return
@@ -252,12 +264,19 @@ final class PanelViewModel {
         onRequestClose?()
     }
 
-    private func openParameterPicker(numberKey: Int, source: SourceText) {
-        guard let action = ActionRegistry.all.first(where: { $0.numberKey == numberKey }) else { return }
+    private func copySelected(at index: Int, result: ActionResult) {
+        if index == 0 {
+            copyToPasteboard(result.primary)
+        } else if result.alternatives.indices.contains(index - 1) {
+            copyToPasteboard(result.alternatives[index - 1])
+        }
+    }
+
+    private func openParameterPicker(action: TextAction, source: SourceText) {
         state = .parameterPicking(
             source: source,
             action: action,
-            selectedIndex: Self.defaultParameterIndex(for: action, preferences: preferences)
+            selectedIndex: defaultParameterIndex(for: action)
         )
     }
 
@@ -297,15 +316,9 @@ final class PanelViewModel {
             activate(ActionRegistry.all[selectedIndex], source: source)
             return .handled
         }
-        if let numberKey = Self.numberKey(for: press) {
-            if press.modifiers.contains(.shift), numberKey == 3 || numberKey == 5 {
-                openParameterPicker(numberKey: numberKey, source: source)
-                return .handled
-            }
-            if press.modifiers.contains(.shift) == false, press.modifiers.contains(.command) == false {
-                runDirectly(numberKey: numberKey, source: source)
-                return .handled
-            }
+        if let numberKey = Self.numberKey(for: press), press.modifiers.contains(.command) == false {
+            runDirectly(numberKey: numberKey, source: source)
+            return .handled
         }
         return .ignored
     }
@@ -352,10 +365,31 @@ final class PanelViewModel {
         _ press: KeyPress,
         source: SourceText,
         action: TextAction,
-        result: ActionResult
+        result: ActionResult,
+        selectedIndex: Int
     ) -> KeyPress.Result {
+        let optionCount = 1 + result.alternatives.count
+
+        if press.key == .upArrow {
+            state = .result(
+                source: source,
+                action: action,
+                result: result,
+                selectedIndex: moveSelection(by: -1, count: optionCount, from: selectedIndex)
+            )
+            return .handled
+        }
+        if press.key == .downArrow {
+            state = .result(
+                source: source,
+                action: action,
+                result: result,
+                selectedIndex: moveSelection(by: 1, count: optionCount, from: selectedIndex)
+            )
+            return .handled
+        }
         if press.key == .return, press.modifiers.contains(.command) == false {
-            copyPrimary()
+            copySelected(at: selectedIndex, result: result)
             return .handled
         }
         if press.modifiers.contains(.command), let numberKey = Self.numberKey(for: press), (1...3).contains(numberKey) {
@@ -366,15 +400,9 @@ final class PanelViewModel {
             rerun()
             return .handled
         }
-        if let numberKey = Self.numberKey(for: press) {
-            if press.modifiers.contains(.shift), numberKey == 3 || numberKey == 5 {
-                openParameterPicker(numberKey: numberKey, source: source)
-                return .handled
-            }
-            if press.modifiers.contains(.shift) == false, press.modifiers.contains(.command) == false {
-                runDirectly(numberKey: numberKey, source: source)
-                return .handled
-            }
+        if let numberKey = Self.numberKey(for: press), press.modifiers.contains(.command) == false {
+            runDirectly(numberKey: numberKey, source: source)
+            return .handled
         }
         return .ignored
     }
@@ -385,9 +413,7 @@ final class PanelViewModel {
             return .handled
         }
         guard let source else { return .ignored }
-        if let numberKey = Self.numberKey(for: press),
-           press.modifiers.contains(.shift) == false,
-           press.modifiers.contains(.command) == false {
+        if let numberKey = Self.numberKey(for: press), press.modifiers.contains(.command) == false {
             runDirectly(numberKey: numberKey, source: source)
             return .handled
         }
@@ -411,21 +437,12 @@ final class PanelViewModel {
         press.characters.lowercased() == "r" || press.key.character.lowercased() == "r"
     }
 
-    private static func defaultParameters(for action: TextAction, preferences: PreferenceStoring) -> ActionParameters {
-        switch action.id {
-        case .humanize:
-            return ActionParameters(level: preferences.defaultLevel)
-        default:
-            return ActionParameters()
-        }
-    }
-
-    private static func defaultParameterIndex(for action: TextAction, preferences: PreferenceStoring) -> Int {
+    private func defaultParameterIndex(for action: TextAction) -> Int {
         switch action.id {
         case .changeTone:
-            return Tone.allCases.firstIndex(of: .formal) ?? 0
+            return Tone.allCases.firstIndex(of: lastTone ?? .formal) ?? 0
         case .humanize:
-            return LanguageLevel.allCases.firstIndex(of: preferences.defaultLevel) ?? 0
+            return LanguageLevel.allCases.firstIndex(of: lastLevel ?? preferences.defaultLevel) ?? 0
         default:
             return 0
         }

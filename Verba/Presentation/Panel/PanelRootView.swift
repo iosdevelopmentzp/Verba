@@ -56,12 +56,13 @@ struct PanelRootView: View {
                 RunningView(sourceText: source, action: action)
             }
 
-        case .result(let source, let action, let result):
+        case .result(let source, let action, let result, let selectedIndex):
             withSource(source) {
                 ResultView(
                     sourceText: source,
                     action: action,
                     result: result,
+                    selectedIndex: selectedIndex,
                     onCopyPrimary: { viewModel.copyPrimary() },
                     onCopyAlternative: { viewModel.copyAlternative(at: $0) },
                     onRerun: { viewModel.rerun() }

@@ -40,10 +40,10 @@ override var canBecomeMain: Bool { false }
 | `⌃⌥Space` | global | toggle panel |
 | `↑` `↓` | picking | move selection |
 | `⏎` | picking | run the selected action |
-| `1`–`6` | picking, result, failed | run that action directly |
-| `⇧3` / `⇧5` | picking, result | open the tone / level picker |
-| `⏎` | result | copy `primary`, show HUD |
-| `⌘1` `⌘2` `⌘3` | result | copy alternative 1/2/3, show HUD |
+| `1`–`6` | picking, result, failed | run that action directly; `3` / `5` (change tone / humanize) always open the parameter picker instead, preselected to the last tone/level chosen |
+| `↑` `↓` | result | move the highlight across `primary` and its alternatives |
+| `⏎` | result | copy the highlighted option, show HUD |
+| `⌘1` `⌘2` `⌘3` | result | copy alternative 1/2/3 directly, show HUD |
 | `⌘⏎` | manualEntry | accept typed text, go to `picking` |
 | `⌘R` | result, failed | re-run the same action |
 | `⎋` | anywhere | cancel and close |
