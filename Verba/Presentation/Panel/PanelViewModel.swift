@@ -37,7 +37,6 @@ final class PanelViewModel {
     private(set) var isHUDVisible = false
     private(set) var usageSnapshot: UsageSnapshot?
     private(set) var explanation: ExplanationState?
-    private(set) var isDiffShown = false
 
     var onRequestClose: (() -> Void)?
     var onOpenSettingsRequested: (() -> Void)?
@@ -95,7 +94,6 @@ final class PanelViewModel {
         task?.cancel()
         isHUDVisible = false
         dismissExplanation()
-        isDiffShown = false
         state = .capturing
 
         task = Task { [weak self] in
@@ -116,7 +114,6 @@ final class PanelViewModel {
         task = nil
         isHUDVisible = false
         dismissExplanation()
-        isDiffShown = false
         state = .capturing
     }
 
@@ -195,7 +192,10 @@ final class PanelViewModel {
 
     func copyOriginal() {
         switch state {
-        case .picking(let source, _), .parameterPicking(let source, _, _), .result(let source, _, _, _):
+        case .picking(let source, _),
+             .parameterPicking(let source, _, _),
+             .running(let source, _),
+             .result(let source, _, _, _):
             copyToPasteboard(source.content)
         case .failed(.some(let source), _, _):
             copyToPasteboard(source.content)
@@ -239,10 +239,6 @@ final class PanelViewModel {
         explainTask?.cancel()
         explainTask = nil
         explanation = nil
-    }
-
-    func toggleDiff() {
-        isDiffShown.toggle()
     }
 
     func openSettings() {
@@ -322,7 +318,6 @@ final class PanelViewModel {
     private func run(action: TextAction, source: SourceText, parameters: ActionParameters, bypassCache: Bool) {
         task?.cancel()
         currentParameters = parameters
-        isDiffShown = false
         state = .running(source: source, action: action)
 
         task = Task { [weak self] in
@@ -439,10 +434,6 @@ final class PanelViewModel {
             editCurrentSource()
             return .handled
         }
-        if press.modifiers.contains(.command), Self.isC(press) {
-            copyOriginal()
-            return .handled
-        }
         if let numberKey = Self.numberKey(for: press), press.modifiers.contains(.command) == false {
             runDirectly(numberKey: numberKey, source: source)
             return .handled
@@ -480,10 +471,6 @@ final class PanelViewModel {
         }
         if press.key == .leftArrow, press.modifiers.contains(.command) {
             goBackToPicking()
-            return .handled
-        }
-        if press.modifiers.contains(.command), Self.isC(press) {
-            copyOriginal()
             return .handled
         }
         if let numberKey = Self.numberKey(for: press),
@@ -543,16 +530,8 @@ final class PanelViewModel {
             explainFixes()
             return .handled
         }
-        if press.modifiers.contains(.command), Self.isD(press), action.supportsDiff {
-            toggleDiff()
-            return .handled
-        }
         if press.key == .leftArrow, press.modifiers.contains(.command) {
             goBackToPicking()
-            return .handled
-        }
-        if press.modifiers.contains(.command), Self.isC(press) {
-            copyOriginal()
             return .handled
         }
         if let numberKey = Self.numberKey(for: press), press.modifiers.contains(.command) == false {
@@ -569,10 +548,6 @@ final class PanelViewModel {
         }
         if press.key == .leftArrow, press.modifiers.contains(.command) {
             goBackToPicking()
-            return .handled
-        }
-        if press.modifiers.contains(.command), Self.isC(press) {
-            copyOriginal()
             return .handled
         }
         guard let source else { return .ignored }
@@ -602,14 +577,6 @@ final class PanelViewModel {
 
     private static func isE(_ press: KeyPress) -> Bool {
         press.characters.lowercased() == "e" || press.key.character.lowercased() == "e"
-    }
-
-    private static func isC(_ press: KeyPress) -> Bool {
-        press.characters.lowercased() == "c" || press.key.character.lowercased() == "c"
-    }
-
-    private static func isD(_ press: KeyPress) -> Bool {
-        press.characters.lowercased() == "d" || press.key.character.lowercased() == "d"
     }
 
     private func defaultParameterIndex(for action: TextAction) -> Int {

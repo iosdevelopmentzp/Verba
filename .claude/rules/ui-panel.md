@@ -49,19 +49,32 @@ override var canBecomeMain: Bool { false }
   `explanation != nil`, `Esc` dismisses the overlay instead of closing
   the panel, and every other key is swallowed (`.handled`, no-op) so
   input can't leak through to the result screen underneath.
-- Actions with `supportsDiff` show a "show diff"/"hide diff" toggle on
-  the result screen (`⌘D`, footer + tap), rendering a word-level diff
-  of source vs. `result.primary` via `TextDiff.wordDiff` — removed
-  words struck through in `PanelTheme.diffRemoved`, added words bold in
-  `PanelTheme.diffAdded`. Hidden for `translate` (`supportsDiff: false`
-  — source and result are different languages, a word diff is
-  meaningless there).
-- `⌘C` copies the original captured/edited source text untouched, from
-  `picking`, `parameterPicking`, `result`, and `failed` (when a source
-  exists) — an escape hatch for "actually I wanted the original back."
-  Every successful copy (`⏎`, `⌘1`-`⌘3`, `⌘C`) plays a short system
-  sound (`NSSound(named: "Tink")`) via `PanelViewModel.onCopyCompleted`,
-  alongside the existing "Copied" HUD.
+- Actions with `supportsDiff` always show a word-level diff of source
+  vs. `result.primary` on the result screen (no toggle, no hotkey) via
+  `TextDiff.wordDiff` — removed words struck through in
+  `PanelTheme.diffRemoved`, added words bold in `PanelTheme.diffAdded`.
+  Hidden for `translate` (`supportsDiff: false` — source and result are
+  different languages, a word diff is meaningless there).
+- `SourcePreviewView` carries a "copy" button (⌘C hint + tap) next to
+  the character count, wired to `PanelViewModel.copyOriginal()` — a
+  single control shared by every state that has a source (`picking`,
+  `parameterPicking`, `running`, `result`, `failed`), rather than one
+  copied into each screen's own footer.
+- `⌘C` copies the original captured/edited source text untouched.
+  **Must be handled as an `NSResponder` action override, not a
+  SwiftUI `onKeyPress` case:** AppKit resolves Command-key events
+  against the app's default Edit-menu key equivalents (Copy/Cut/Paste/
+  etc.) *before* the key ever reaches a window's `onKeyPress` handler,
+  so an `isC`-style branch in `PanelViewModel.handle(_:)` is silently
+  unreachable — the keystroke is consumed by the menu, finds no
+  responder implementing `copy(_:)`, and NSBeeps. `FloatingPanel`
+  declares `@objc func copy(_ sender: Any?)` (no `override` — this
+  selector isn't declared on `NSResponder` to override, it's a plain
+  Objective-C action the responder chain looks up by name) forwarding
+  to `PanelViewModel.copyOriginal()`. Every successful copy (`⏎`,
+  `⌘1`-`⌘3`, `⌘C`) plays a short system sound (`NSSound(named:
+  "Tink")`) via `PanelViewModel.onCopyCompleted`, alongside the
+  existing "Copied" HUD.
 - `changeTone`/`humanize`'s parameter picker preselects whichever tone/
   level was chosen last time (`PreferenceStoring.lastTone`/`lastLevel`,
   persisted across restarts), falling back to `.formal`/
@@ -85,6 +98,5 @@ override var canBecomeMain: Bool { false }
 | `⌘R` | result, failed | re-run the same action, bypassing the cache |
 | `⌘←` | parameterPicking, result, failed | back to `picking` with the same source, reselecting the action just being configured/run |
 | `⌘E` | result | open the Explain overlay (fixGrammar only, hidden/no-op elsewhere) |
-| `⌘D` | result | toggle the word-level diff (actions with `supportsDiff` only) |
-| `⌘C` | picking, parameterPicking, result, failed | copy the original source text, show HUD |
+| `⌘C` | anywhere a source exists | copy the original source text, show HUD (handled via `FloatingPanel.copy(_:)`, not `onKeyPress`) |
 | `⎋` | anywhere | cancel and close |

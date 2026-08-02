@@ -10,9 +10,6 @@ struct ResultView: View {
     let onRerun: () -> Void
     let onExplain: () -> Void
     let onBack: () -> Void
-    let onCopyOriginal: () -> Void
-    let isDiffShown: Bool
-    let onToggleDiff: () -> Void
 
     // MARK: Static
 
@@ -31,10 +28,7 @@ struct ResultView: View {
             }
 
             if canShowDiff {
-                diffToggle
-                if isDiffShown {
-                    diffSection
-                }
+                diffSection
             }
 
             if result.alternatives.isEmpty == false {
@@ -153,19 +147,6 @@ struct ResultView: View {
         action.supportsDiff && result.primary != sourceText.content
     }
 
-    private var diffToggle: some View {
-        HStack(spacing: 8) {
-            KeyCapsuleView(label: "⌘D", isHighlighted: false)
-            Text(isDiffShown ? "hide diff" : "show diff")
-                .contentShape(Rectangle())
-                .onTapGesture { onToggleDiff() }
-
-            Spacer(minLength: 0)
-        }
-        .font(PanelTheme.caption)
-        .foregroundStyle(PanelTheme.textSecondary)
-    }
-
     private var diffSection: some View {
         TextDiff.wordDiff(original: sourceText.content, revised: result.primary)
             .reduce(Text("")) { partial, segment in
@@ -209,11 +190,6 @@ struct ResultView: View {
             Text("back")
                 .contentShape(Rectangle())
                 .onTapGesture { onBack() }
-
-            KeyCapsuleView(label: "⌘C", isHighlighted: false)
-            Text("copy original")
-                .contentShape(Rectangle())
-                .onTapGesture { onCopyOriginal() }
 
             Spacer(minLength: 0)
         }

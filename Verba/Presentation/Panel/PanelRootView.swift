@@ -43,8 +43,7 @@ struct PanelRootView: View {
                     sourceText: source,
                     selectedIndex: selectedIndex,
                     onActivate: { action in viewModel.activate(action, source: source) },
-                    onEdit: { viewModel.editCurrentSource() },
-                    onCopyOriginal: { viewModel.copyOriginal() }
+                    onEdit: { viewModel.editCurrentSource() }
                 )
             }
 
@@ -55,8 +54,7 @@ struct PanelRootView: View {
                     action: action,
                     selectedIndex: selectedIndex,
                     onChoose: { index in viewModel.choose(index, action: action, source: source) },
-                    onBack: { viewModel.goBackToPicking() },
-                    onCopyOriginal: { viewModel.copyOriginal() }
+                    onBack: { viewModel.goBackToPicking() }
                 )
             }
 
@@ -76,10 +74,7 @@ struct PanelRootView: View {
                     onCopyAlternative: { viewModel.copyAlternative(at: $0) },
                     onRerun: { viewModel.rerun() },
                     onExplain: { viewModel.explainFixes() },
-                    onBack: { viewModel.goBackToPicking() },
-                    onCopyOriginal: { viewModel.copyOriginal() },
-                    isDiffShown: viewModel.isDiffShown,
-                    onToggleDiff: { viewModel.toggleDiff() }
+                    onBack: { viewModel.goBackToPicking() }
                 )
             }
 
@@ -149,7 +144,7 @@ struct PanelRootView: View {
         @ViewBuilder content: () -> Content
     ) -> some View {
         VStack(alignment: .leading, spacing: PanelTheme.sectionSpacing) {
-            SourcePreviewView(sourceText: source)
+            SourcePreviewView(sourceText: source, onCopyOriginal: { viewModel.copyOriginal() })
             HairlineDivider()
             content()
         }

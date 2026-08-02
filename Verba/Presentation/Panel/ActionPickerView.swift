@@ -5,7 +5,6 @@ struct ActionPickerView: View {
     let selectedIndex: Int
     let onActivate: (TextAction) -> Void
     let onEdit: () -> Void
-    let onCopyOriginal: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -27,11 +26,6 @@ struct ActionPickerView: View {
             Text("edit text")
                 .contentShape(Rectangle())
                 .onTapGesture { onEdit() }
-
-            KeyCapsuleView(label: "⌘C", isHighlighted: false)
-            Text("copy original")
-                .contentShape(Rectangle())
-                .onTapGesture { onCopyOriginal() }
 
             Spacer(minLength: 0)
         }

@@ -6,7 +6,6 @@ struct ParameterPickerView: View {
     let selectedIndex: Int
     let onChoose: (Int) -> Void
     let onBack: () -> Void
-    let onCopyOriginal: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -45,11 +44,6 @@ struct ParameterPickerView: View {
             Text("back")
                 .contentShape(Rectangle())
                 .onTapGesture { onBack() }
-
-            KeyCapsuleView(label: "⌘C", isHighlighted: false)
-            Text("copy original")
-                .contentShape(Rectangle())
-                .onTapGesture { onCopyOriginal() }
 
             Spacer(minLength: 0)
         }

@@ -2,6 +2,7 @@ import SwiftUI
 
 struct SourcePreviewView: View {
     let sourceText: SourceText
+    let onCopyOriginal: () -> Void
 
     @State private var isExpanded = false
 
@@ -35,6 +36,15 @@ struct SourcePreviewView: View {
                         .font(PanelTheme.caption)
                         .foregroundStyle(.orange)
                 }
+
+                Spacer(minLength: 0)
+
+                KeyCapsuleView(label: "⌘C", isHighlighted: false)
+                Text("copy")
+                    .font(PanelTheme.caption)
+                    .foregroundStyle(PanelTheme.textSecondary)
+                    .contentShape(Rectangle())
+                    .onTapGesture { onCopyOriginal() }
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
