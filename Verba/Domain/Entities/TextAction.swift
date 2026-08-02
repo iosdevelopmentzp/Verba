@@ -15,4 +15,5 @@ struct TextAction: Sendable, Identifiable, Equatable {
     let templateID: String
     let tier: ModelTier
     let needsParameters: Bool
+    let supportsExplanation: Bool
 }

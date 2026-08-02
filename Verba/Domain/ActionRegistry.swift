@@ -7,7 +7,8 @@ enum ActionRegistry {
             numberKey: 1,
             templateID: "fixGrammar",
             tier: .economy,
-            needsParameters: false
+            needsParameters: false,
+            supportsExplanation: true
         ),
         TextAction(
             id: .rephrase,
@@ -16,7 +17,8 @@ enum ActionRegistry {
             numberKey: 2,
             templateID: "rephrase",
             tier: .standard,
-            needsParameters: false
+            needsParameters: false,
+            supportsExplanation: false
         ),
         TextAction(
             id: .changeTone,
@@ -25,7 +27,8 @@ enum ActionRegistry {
             numberKey: 3,
             templateID: "changeTone",
             tier: .standard,
-            needsParameters: true
+            needsParameters: true,
+            supportsExplanation: false
         ),
         TextAction(
             id: .translate,
@@ -34,7 +37,8 @@ enum ActionRegistry {
             numberKey: 4,
             templateID: "translate",
             tier: .economy,
-            needsParameters: false
+            needsParameters: false,
+            supportsExplanation: false
         ),
         TextAction(
             id: .humanize,
@@ -43,7 +47,8 @@ enum ActionRegistry {
             numberKey: 5,
             templateID: "humanize",
             tier: .standard,
-            needsParameters: true
+            needsParameters: true,
+            supportsExplanation: false
         ),
         TextAction(
             id: .shorten,
@@ -52,7 +57,8 @@ enum ActionRegistry {
             numberKey: 6,
             templateID: "shorten",
             tier: .standard,
-            needsParameters: false
+            needsParameters: false,
+            supportsExplanation: false
         )
     ]
 }

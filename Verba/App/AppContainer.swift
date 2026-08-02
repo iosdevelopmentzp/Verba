@@ -51,12 +51,14 @@ final class AppContainer {
 
         let processTextUseCase = ProcessTextUseCase(textProcessor: textProcessor, cache: resultCache, preferences: preferences)
         let deliverResultUseCase = DeliverResultUseCase(resultDeliverer: PasteboardResultSink())
+        let explainFixesUseCase = ExplainFixesUseCase(explainer: textProcessor)
 
         panelWindowController = PanelWindowController(
             logger: logger,
             captureTextUseCase: captureTextUseCase,
             processTextUseCase: processTextUseCase,
             deliverResultUseCase: deliverResultUseCase,
+            explainFixesUseCase: explainFixesUseCase,
             preferences: preferences,
             usageMeter: usageMeter
         )

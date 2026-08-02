@@ -1,6 +1,6 @@
 import Foundation
 
-final class LLMTextProcessor: TextProcessing {
+final class LLMTextProcessor: TextProcessing, FixExplaining {
 
     // MARK: Dependencies
 
@@ -28,6 +28,17 @@ final class LLMTextProcessor: TextProcessing {
             "primary": ["type": "string"],
             "alternatives": ["type": "array", "maxItems": 3, "items": ["type": "string"]],
             "notes": ["type": "array", "maxItems": 4, "items": ["type": "string"]]
+        ]
+    ]
+
+    private static let explainActionID = "explainFixes"
+
+    private static let explainSchema: [String: JSONValue] = [
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["explanations"],
+        "properties": [
+            "explanations": ["type": "array", "maxItems": 8, "items": ["type": "string"]]
         ]
     ]
 
@@ -115,6 +126,56 @@ final class LLMTextProcessor: TextProcessing {
 
     func cacheIdentity(for action: TextAction, tier: ModelTier) -> LLMCacheIdentity {
         LLMCacheIdentity(modelID: resolvedModelID(for: tier), promptVersion: promptBuilder.promptVersion(for: action))
+    }
+
+    func explainFixes(original: String, corrected: String, notes: [String], language: TextLanguage) async throws -> [String] {
+        guard let client = providerRegistry.client(for: preferences.providerID) else {
+            throw AppError.unknown
+        }
+        guard let apiKey = try secretStore.apiKey(for: preferences.providerID), apiKey.isEmpty == false else {
+            throw AppError.missingAPIKey
+        }
+
+        let modelID = resolvedModelID(for: .economy)
+        let systemPrompt = ExplainFixesPrompt.systemPrompt(language: language)
+        let userContent = ExplainFixesPrompt.userContent(original: original, corrected: corrected, notes: notes)
+        let maxOutputTokens = Self.maxOutputTokens(forCharacterCount: original.count + corrected.count)
+
+        let clock = ContinuousClock()
+        let start = clock.now
+
+        do {
+            let outcome = try await explainRequestWithRetry(
+                client: client,
+                apiKey: apiKey,
+                modelID: modelID,
+                systemPrompt: systemPrompt,
+                userContent: userContent,
+                maxOutputTokens: maxOutputTokens
+            )
+
+            logger.llmRequestSucceeded(
+                actionID: Self.explainActionID,
+                modelID: modelID,
+                charCount: original.count,
+                latencyMS: Self.milliseconds(clock.now - start),
+                inputTokens: outcome.inputTokens,
+                outputTokens: outcome.outputTokens
+            )
+            await usageMeter.record(
+                inputTokens: outcome.inputTokens,
+                outputTokens: outcome.outputTokens,
+                modelID: modelID
+            )
+            return outcome.explanations
+        } catch let error as AppError {
+            logger.llmRequestFailed(actionID: Self.explainActionID, modelID: modelID, error: error)
+            throw error
+        } catch is CancellationError {
+            throw AppError.cancelled
+        } catch {
+            throw AppError.unknown
+        }
     }
 
     // MARK: Private methods
@@ -258,6 +319,81 @@ final class LLMTextProcessor: TextProcessing {
         }
     }
 
+    private func explainRequestWithRetry(
+        client: LLMClient,
+        apiKey: String,
+        modelID: String,
+        systemPrompt: String,
+        userContent: String,
+        maxOutputTokens: Int
+    ) async throws -> (explanations: [String], inputTokens: Int, outputTokens: Int) {
+        do {
+            return try await explainSingleAttempt(
+                client: client,
+                apiKey: apiKey,
+                modelID: modelID,
+                systemPrompt: systemPrompt,
+                userContent: userContent,
+                maxOutputTokens: maxOutputTokens
+            )
+        } catch let error as AppError where retryPolicy.shouldRetry(error) {
+            try await Task.sleep(for: retryPolicy.delay(for: error))
+            return try await explainSingleAttempt(
+                client: client,
+                apiKey: apiKey,
+                modelID: modelID,
+                systemPrompt: systemPrompt,
+                userContent: userContent,
+                maxOutputTokens: maxOutputTokens
+            )
+        }
+    }
+
+    private func explainSingleAttempt(
+        client: LLMClient,
+        apiKey: String,
+        modelID: String,
+        systemPrompt: String,
+        userContent: String,
+        maxOutputTokens: Int
+    ) async throws -> (explanations: [String], inputTokens: Int, outputTokens: Int) {
+        let request = LLMRequest(
+            modelID: modelID,
+            systemPrompt: systemPrompt,
+            userContent: userContent,
+            jsonSchema: Self.explainSchema,
+            maxOutputTokens: maxOutputTokens,
+            minimalReasoningEffort: true
+        )
+
+        var response = try await client.complete(request, apiKey: apiKey)
+
+        if response.isTruncated {
+            let widened = LLMRequest(
+                modelID: modelID,
+                systemPrompt: systemPrompt,
+                userContent: userContent,
+                jsonSchema: Self.explainSchema,
+                maxOutputTokens: min(Self.maxOutputTokensCeiling, maxOutputTokens * 2),
+                minimalReasoningEffort: true
+            )
+            response = try await client.complete(widened, apiKey: apiKey)
+        }
+
+        guard response.isTruncated == false else { throw AppError.malformedResponse }
+
+        let payload = try Self.decodeExplainPayload(from: response.rawJSON)
+        return (payload.explanations.map(Self.sanitize), response.inputTokens, response.outputTokens)
+    }
+
+    private static func decodeExplainPayload(from data: Data) throws -> ExplainPayload {
+        do {
+            return try JSONDecoder().decode(ExplainPayload.self, from: data)
+        } catch {
+            throw AppError.malformedResponse
+        }
+    }
+
     private func resolvedModelID(for tier: ModelTier) -> String {
         if tier == .standard,
            let entry = ModelCatalog.entry(id: preferences.modelID),
@@ -283,4 +419,8 @@ private struct ActionResultPayload: Decodable {
     let primary: String
     let alternatives: [String]
     let notes: [String]
+}
+
+private struct ExplainPayload: Decodable {
+    let explanations: [String]
 }

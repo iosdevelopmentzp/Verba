@@ -32,6 +32,7 @@ final class PanelWindowController: NSObject {
         captureTextUseCase: CaptureTextUseCase,
         processTextUseCase: ProcessTextUseCase,
         deliverResultUseCase: DeliverResultUseCase,
+        explainFixesUseCase: ExplainFixesUseCase,
         preferences: PreferenceStoring,
         usageMeter: UsageMetering
     ) {
@@ -41,6 +42,7 @@ final class PanelWindowController: NSObject {
             captureTextUseCase: captureTextUseCase,
             processTextUseCase: processTextUseCase,
             deliverResultUseCase: deliverResultUseCase,
+            explainFixesUseCase: explainFixesUseCase,
             preferences: preferences,
             usageMeter: usageMeter,
             logger: logger

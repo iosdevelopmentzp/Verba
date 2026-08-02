@@ -25,6 +25,7 @@ struct PanelRootView: View {
             }
             .overlay(alignment: .top) { budgetBanner }
             .overlay(alignment: .bottom) { hudOverlay }
+            .overlay { explanationOverlay }
     }
 
     @ViewBuilder
@@ -68,7 +69,8 @@ struct PanelRootView: View {
                     selectedIndex: selectedIndex,
                     onCopyPrimary: { viewModel.copyPrimary() },
                     onCopyAlternative: { viewModel.copyAlternative(at: $0) },
-                    onRerun: { viewModel.rerun() }
+                    onRerun: { viewModel.rerun() },
+                    onExplain: { viewModel.explainFixes() }
                 )
             }
 
@@ -110,6 +112,13 @@ struct PanelRootView: View {
                 .padding(.bottom, 16)
                 .transition(.opacity)
                 .animation(.easeOut(duration: 0.15), value: viewModel.isHUDVisible)
+        }
+    }
+
+    @ViewBuilder
+    private var explanationOverlay: some View {
+        if let explanation = viewModel.explanation {
+            ExplanationOverlayView(state: explanation) { viewModel.dismissExplanation() }
         }
     }
 

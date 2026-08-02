@@ -25,7 +25,8 @@ struct ProcessTextUseCase: Sendable {
     func execute(
         text: SourceText,
         action: TextAction,
-        parameters: ActionParameters
+        parameters: ActionParameters,
+        bypassCache: Bool
     ) async throws -> ActionResult {
         let trimmed = text.content.trimmingCharacters(in: .whitespacesAndNewlines)
         guard trimmed.isEmpty == false else { throw AppError.emptyInput }
@@ -43,7 +44,7 @@ struct ProcessTextUseCase: Sendable {
             text: trimmed
         )
 
-        if let cached = await cache.value(for: key) {
+        if bypassCache == false, let cached = await cache.value(for: key) {
             return ActionResult(
                 primary: cached.primary,
                 alternatives: cached.alternatives,

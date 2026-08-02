@@ -15,6 +15,15 @@ truncated to 32 chars. Changing a template's `version`, the action id,
 the model id, or any parameter must change the key — that is the whole
 point of the version field. A cache hit skips the network call entirely.
 
+`ProcessTextUseCase.execute` takes a `bypassCache: Bool`. Rerun
+(`PanelViewModel.rerun()`, `⌘R`) always passes `true` — otherwise
+rerunning the exact same action on the exact same text is guaranteed
+to hit its own just-written cache entry and silently return the
+identical result, which defeats the entire point of "try again."
+Bypassing only skips the *read*; the fresh result still overwrites the
+cache entry afterward, so a later genuine cache hit gets the newest
+result, not the stale one.
+
 ## Cost caps
 
 - `ModelCatalog` is the single source of truth for model ids and

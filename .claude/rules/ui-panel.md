@@ -39,6 +39,16 @@ override var canBecomeMain: Bool { false }
 - `SourcePreviewView`'s source-text line is tap-to-expand/collapse
   (2 lines collapsed, unbounded expanded) — local `@State`, no
   view-model plumbing.
+- Fix grammar's result screen has an "Explain" button
+  (`TextAction.supportsExplanation`, only `fixGrammar` for now, hidden
+  when `result.notes` is empty) that fires a second, uncached,
+  `.economy`-tier request via `ExplainFixesUseCase` and shows the
+  answer in `ExplanationOverlayView`, an `.overlay` on `PanelRootView`
+  driven by `PanelViewModel.explanation` — same "state living outside
+  `PanelState`" pattern as `isHUDVisible`/`usageSnapshot`. While
+  `explanation != nil`, `Esc` dismisses the overlay instead of closing
+  the panel, and every other key is swallowed (`.handled`, no-op) so
+  input can't leak through to the result screen underneath.
 
 ## Keyboard map
 
@@ -53,5 +63,6 @@ override var canBecomeMain: Bool { false }
 | `⇧⏎` | result | copy the highlighted option, then go back to `picking` with *that highlighted option* (not the original capture) as the new source, origin `.chained` |
 | `⌘1` `⌘2` `⌘3` | result | copy alternative 1/2/3 directly, show HUD |
 | `⌘⏎` | manualEntry | accept typed text, go to `picking` |
-| `⌘R` | result, failed | re-run the same action |
+| `⌘R` | result, failed | re-run the same action, bypassing the cache |
+| `⌘E` | result | open the Explain overlay (fixGrammar only, hidden/no-op elsewhere) |
 | `⎋` | anywhere | cancel and close |

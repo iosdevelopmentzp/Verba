@@ -11,6 +11,12 @@ enum PanelState: Equatable {
     case failed(source: SourceText?, action: TextAction?, error: AppError)
 }
 
+enum ExplanationState: Equatable {
+    case loading
+    case loaded([String])
+    case failed(AppError)
+}
+
 @MainActor
 @Observable
 final class PanelViewModel {
@@ -20,6 +26,7 @@ final class PanelViewModel {
     private let captureTextUseCase: CaptureTextUseCase
     private let processTextUseCase: ProcessTextUseCase
     private let deliverResultUseCase: DeliverResultUseCase
+    private let explainFixesUseCase: ExplainFixesUseCase
     private let preferences: PreferenceStoring
     private let usageMeter: UsageMetering
     private let logger: AppLogger
@@ -29,6 +36,7 @@ final class PanelViewModel {
     private(set) var state: PanelState = .capturing
     private(set) var isHUDVisible = false
     private(set) var usageSnapshot: UsageSnapshot?
+    private(set) var explanation: ExplanationState?
 
     var onRequestClose: (() -> Void)?
     var onOpenSettingsRequested: (() -> Void)?
@@ -48,6 +56,7 @@ final class PanelViewModel {
     // MARK: Private properties
 
     private var task: Task<Void, Never>?
+    private var explainTask: Task<Void, Never>?
     private var currentParameters = ActionParameters()
     private var lastTone: Tone?
     private var lastLevel: LanguageLevel?
@@ -66,6 +75,7 @@ final class PanelViewModel {
         captureTextUseCase: CaptureTextUseCase,
         processTextUseCase: ProcessTextUseCase,
         deliverResultUseCase: DeliverResultUseCase,
+        explainFixesUseCase: ExplainFixesUseCase,
         preferences: PreferenceStoring,
         usageMeter: UsageMetering,
         logger: AppLogger
@@ -73,6 +83,7 @@ final class PanelViewModel {
         self.captureTextUseCase = captureTextUseCase
         self.processTextUseCase = processTextUseCase
         self.deliverResultUseCase = deliverResultUseCase
+        self.explainFixesUseCase = explainFixesUseCase
         self.preferences = preferences
         self.usageMeter = usageMeter
         self.logger = logger
@@ -83,6 +94,7 @@ final class PanelViewModel {
     func beginCapture() {
         task?.cancel()
         isHUDVisible = false
+        dismissExplanation()
         state = .capturing
 
         task = Task { [weak self] in
@@ -102,6 +114,7 @@ final class PanelViewModel {
         task?.cancel()
         task = nil
         isHUDVisible = false
+        dismissExplanation()
         state = .capturing
     }
 
@@ -121,7 +134,7 @@ final class PanelViewModel {
         if action.needsParameters {
             openParameterPicker(action: action, source: source)
         } else {
-            run(action: action, source: source, parameters: ActionParameters())
+            run(action: action, source: source, parameters: ActionParameters(), bypassCache: false)
         }
     }
 
@@ -132,13 +145,13 @@ final class PanelViewModel {
         case .humanize: lastLevel = parameters.level
         default: break
         }
-        run(action: action, source: source, parameters: parameters)
+        run(action: action, source: source, parameters: parameters, bypassCache: false)
     }
 
     func rerun() {
         switch state {
         case .result(let source, let action, _, _), .failed(.some(let source), .some(let action), _):
-            run(action: action, source: source, parameters: currentParameters)
+            run(action: action, source: source, parameters: currentParameters, bypassCache: true)
         default:
             break
         }
@@ -154,6 +167,43 @@ final class PanelViewModel {
         copyToPasteboard(result.alternatives[index])
     }
 
+    func explainFixes() {
+        guard case .result(let source, let action, let result, _) = state,
+              action.supportsExplanation,
+              result.notes.isEmpty == false else { return }
+
+        explainTask?.cancel()
+        explanation = .loading
+
+        explainTask = Task { [weak self] in
+            guard let self else { return }
+            do {
+                let explanations = try await explainFixesUseCase.execute(
+                    original: source.content,
+                    corrected: result.primary,
+                    notes: result.notes,
+                    language: source.language
+                )
+                guard Task.isCancelled == false else { return }
+                explanation = .loaded(explanations)
+            } catch AppError.cancelled {
+                return
+            } catch let error as AppError {
+                guard Task.isCancelled == false else { return }
+                explanation = .failed(error)
+            } catch {
+                guard Task.isCancelled == false else { return }
+                explanation = .failed(.unknown)
+            }
+        }
+    }
+
+    func dismissExplanation() {
+        explainTask?.cancel()
+        explainTask = nil
+        explanation = nil
+    }
+
     func openSettings() {
         onOpenSettingsRequested?()
     }
@@ -164,9 +214,15 @@ final class PanelViewModel {
 
     func handle(_ press: KeyPress) -> KeyPress.Result {
         if press.key == .escape {
-            cancelAndClose()
+            if explanation != nil {
+                dismissExplanation()
+            } else {
+                cancelAndClose()
+            }
             return .handled
         }
+
+        guard explanation == nil else { return .handled }
 
         switch state {
         case .capturing, .running:
@@ -222,7 +278,7 @@ final class PanelViewModel {
         )
     }
 
-    private func run(action: TextAction, source: SourceText, parameters: ActionParameters) {
+    private func run(action: TextAction, source: SourceText, parameters: ActionParameters, bypassCache: Bool) {
         task?.cancel()
         currentParameters = parameters
         state = .running(source: source, action: action)
@@ -230,7 +286,12 @@ final class PanelViewModel {
         task = Task { [weak self] in
             guard let self else { return }
             do {
-                let result = try await processTextUseCase.execute(text: source, action: action, parameters: parameters)
+                let result = try await processTextUseCase.execute(
+                    text: source,
+                    action: action,
+                    parameters: parameters,
+                    bypassCache: bypassCache
+                )
                 guard Task.isCancelled == false else { return }
                 state = .result(source: source, action: action, result: result, selectedIndex: 0)
                 await refreshBudgetState()
@@ -413,6 +474,10 @@ final class PanelViewModel {
             rerun()
             return .handled
         }
+        if press.modifiers.contains(.command), Self.isE(press) {
+            explainFixes()
+            return .handled
+        }
         if let numberKey = Self.numberKey(for: press), press.modifiers.contains(.command) == false {
             runDirectly(numberKey: numberKey, source: source)
             return .handled
@@ -448,6 +513,10 @@ final class PanelViewModel {
 
     private static func isR(_ press: KeyPress) -> Bool {
         press.characters.lowercased() == "r" || press.key.character.lowercased() == "r"
+    }
+
+    private static func isE(_ press: KeyPress) -> Bool {
+        press.characters.lowercased() == "e" || press.key.character.lowercased() == "e"
     }
 
     private func defaultParameterIndex(for action: TextAction) -> Int {

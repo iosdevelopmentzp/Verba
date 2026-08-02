@@ -8,6 +8,7 @@ struct ResultView: View {
     let onCopyPrimary: () -> Void
     let onCopyAlternative: (Int) -> Void
     let onRerun: () -> Void
+    let onExplain: () -> Void
 
     // MARK: Static
 
@@ -133,6 +134,10 @@ struct ResultView: View {
         .padding(.horizontal, 2)
     }
 
+    private var canExplain: Bool {
+        action.supportsExplanation && result.notes.isEmpty == false
+    }
+
     private var footer: some View {
         HStack(spacing: 8) {
             KeyCapsuleView(label: "⏎", isHighlighted: false)
@@ -142,6 +147,13 @@ struct ResultView: View {
             Text("rerun")
                 .contentShape(Rectangle())
                 .onTapGesture { onRerun() }
+
+            if canExplain {
+                KeyCapsuleView(label: "⌘E", isHighlighted: false)
+                Text("explain")
+                    .contentShape(Rectangle())
+                    .onTapGesture { onExplain() }
+            }
 
             Spacer(minLength: 0)
         }
