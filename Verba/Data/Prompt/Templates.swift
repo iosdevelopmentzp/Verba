@@ -71,16 +71,23 @@ private struct ChangeToneTemplate: PromptTemplate {
 
 private struct TranslateTemplate: PromptTemplate {
     let id = "translate"
-    let version = 2
+    let version = 3
 
     func systemPrompt(parameters: ActionParameters, language: TextLanguage) -> String {
         """
-        Translate between Russian and English; detect the input's language yourself and \
-        translate into the other one. Preserve technical terms, product names, and code exactly \
+        \(direction(for: language)) Preserve technical terms, product names, and code exactly \
         as written. primary is the translation; alternatives may hold one alternate phrasing if \
         genuinely useful, otherwise leave it empty. Notes may flag terms with no clean \
         equivalent, in the language of the input text.
         """
+    }
+
+    private func direction(for language: TextLanguage) -> String {
+        switch language {
+        case .russian: return "The input is in Russian; translate it into English."
+        case .english: return "The input is in English; translate it into Russian."
+        case .other: return "Detect whether the input is in Russian or English, then translate it into the other one."
+        }
     }
 }
 

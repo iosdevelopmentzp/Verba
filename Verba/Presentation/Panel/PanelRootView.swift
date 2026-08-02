@@ -6,9 +6,12 @@ struct PanelRootView: View {
     @FocusState private var isRootFocused: Bool
 
     var body: some View {
-        content
-            .padding(PanelTheme.contentPadding)
-            .frame(width: PanelTheme.width, alignment: .leading)
+        ScrollView {
+            content
+                .padding(PanelTheme.contentPadding)
+        }
+        .frame(width: PanelTheme.width, alignment: .leading)
+            .frame(maxHeight: viewModel.maxContentHeight)
             .background(PanelTheme.background, in: PanelTheme.panelShape)
             .overlay { PanelTheme.panelShape.strokeBorder(PanelTheme.hairline, lineWidth: 1) }
             .focusable()

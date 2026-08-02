@@ -21,7 +21,11 @@ override var canBecomeMain: Bool { false }
   source app (Slack).
 - Position: horizontally centered on the screen containing the mouse,
   vertically ~28% from the top. Width `PanelTheme.width`, height fits
-  content, 0.12s fade (skip the animation when Reduce Motion is on).
+  content up to the mouse screen's available height (28% top inset,
+  24pt bottom margin) via `PanelViewModel.maxContentHeight`, beyond
+  which `PanelRootView`'s root `ScrollView` takes over — content never
+  pushes the window off-screen. 0.12s fade (skip the animation when
+  Reduce Motion is on).
 - Every metric, font, and color comes from `PanelTheme`. The panel is
   always light: colors are explicit values, never `.primary` /
   `.secondary` / `.regularMaterial`, which resolve against the system
@@ -32,6 +36,9 @@ override var canBecomeMain: Bool { false }
   any in-flight `Task` (see `concurrency.md`).
 - Re-showing reuses the same panel instance — no window leaks. Verify
   by toggling 20 times and checking `NSApp.windows.count` stays flat.
+- `SourcePreviewView`'s source-text line is tap-to-expand/collapse
+  (2 lines collapsed, unbounded expanded) — local `@State`, no
+  view-model plumbing.
 
 ## Keyboard map
 

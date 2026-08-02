@@ -33,6 +33,7 @@ final class PanelViewModel {
     var onRequestClose: (() -> Void)?
     var onOpenSettingsRequested: (() -> Void)?
     var onOpenSystemSettingsRequested: (() -> Void)?
+    var maxContentHeight: CGFloat?
 
     var isOverBudget: Bool {
         guard let usageSnapshot else { return false }

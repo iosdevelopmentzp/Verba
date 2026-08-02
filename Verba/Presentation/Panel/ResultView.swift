@@ -13,7 +13,6 @@ struct ResultView: View {
 
     private static let primaryLineLimit = 14
     private static let alternativeLineLimit = 4
-    private static let selectedLineLimit = 30
 
     // MARK: Body
 
@@ -61,7 +60,7 @@ struct ResultView: View {
             .font(PanelTheme.prominent)
             .foregroundStyle(isPrimarySelected ? Color.white : PanelTheme.textPrimary)
             .lineSpacing(3)
-            .lineLimit(isPrimarySelected ? Self.selectedLineLimit : Self.primaryLineLimit)
+            .lineLimit(isPrimarySelected ? nil : Self.primaryLineLimit)
             .fixedSize(horizontal: false, vertical: true)
             .textSelection(.enabled)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -91,7 +90,7 @@ struct ResultView: View {
                         .font(PanelTheme.body)
                         .foregroundStyle(isSelected ? Color.white : PanelTheme.textSecondary)
                         .lineSpacing(2)
-                        .lineLimit(isSelected ? Self.selectedLineLimit : Self.alternativeLineLimit)
+                        .lineLimit(isSelected ? nil : Self.alternativeLineLimit)
                         .fixedSize(horizontal: false, vertical: true)
                         .textSelection(.enabled)
 

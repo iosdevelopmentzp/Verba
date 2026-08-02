@@ -19,6 +19,7 @@ final class PanelWindowController: NSObject {
     private static let width: CGFloat = PanelTheme.width
     private static let minimumHeight: CGFloat = 80
     private static let topScreenFraction: CGFloat = 0.28
+    private static let bottomMargin: CGFloat = 24
     private static let animationDuration: TimeInterval = 0.12
     private static let pasteboardPrivacyPaneURL = URL(
         string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Pasteboard"
@@ -154,9 +155,11 @@ final class PanelWindowController: NSObject {
         let screen = NSScreen.screens.first(where: { $0.frame.contains(mouseLocation) }) ?? NSScreen.main
         guard let screen else { return panel.frame }
 
+        let topInset = screen.frame.height * Self.topScreenFraction
+        viewModel.maxContentHeight = screen.frame.height - topInset - Self.bottomMargin
+
         let height = contentHeight()
         let originX = screen.frame.midX - Self.width / 2
-        let topInset = screen.frame.height * Self.topScreenFraction
         let originY = screen.frame.maxY - topInset - height
         return NSRect(x: originX, y: originY, width: Self.width, height: height)
     }

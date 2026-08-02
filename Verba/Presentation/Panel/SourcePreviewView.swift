@@ -3,15 +3,19 @@ import SwiftUI
 struct SourcePreviewView: View {
     let sourceText: SourceText
 
+    @State private var isExpanded = false
+
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(sourceText.content)
                 .font(PanelTheme.secondary)
                 .foregroundStyle(PanelTheme.textSecondary)
                 .lineSpacing(2)
-                .lineLimit(2)
+                .lineLimit(isExpanded ? nil : 2)
                 .truncationMode(.tail)
                 .fixedSize(horizontal: false, vertical: true)
+                .contentShape(Rectangle())
+                .onTapGesture { isExpanded.toggle() }
 
             HStack(spacing: 8) {
                 Text("\(sourceText.content.count) characters")
