@@ -22,7 +22,7 @@ struct ActionPickerView: View {
 
     private var footer: some View {
         HStack(spacing: 8) {
-            KeyCapsuleView(label: "⌘E", isHighlighted: false)
+            KeyCapsuleView(label: "⇥", isHighlighted: false)
             Text("edit text")
                 .contentShape(Rectangle())
                 .onTapGesture { onEdit() }

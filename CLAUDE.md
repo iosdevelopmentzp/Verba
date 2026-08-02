@@ -237,3 +237,18 @@ know only `Domain`; `App` knows everybody.
   default. `MenuBarExtra` uses the `text.badge.checkmark` SF Symbol, which
   renders correctly as a template image at menu bar sizes. Add a real
   `AppIcon` asset set when there is artwork.
+- **`manualEntry`'s plain Return is self-managed, not native `TextField`
+  passthrough.** `TextField(_:text:axis: .vertical)` is documented to
+  insert a newline on Return rather than submitting, but in this app's
+  manually-hosted `NSHostingView`-inside-a-borderless-`NSPanel` setup
+  (see the Stage 4 `openSettings` deviation above for the same root
+  cause), a plain Return pressed while the field is focused never
+  reached that native behavior — confirmed empirically, not just
+  theorized. `PanelViewModel.handleManualEntry` now intercepts plain
+  Return itself and appends `"\n"` to `manualDraft` via
+  `updateManualDraft(_:)` directly, rather than returning `.ignored` and
+  trusting the field to handle it. Known limitation: this always
+  appends at the end of the string, not at the cursor position, since a
+  plain `Binding<String>` exposes no cursor-position API. Do not revert
+  this to relying on native passthrough without re-verifying in the
+  running app first.

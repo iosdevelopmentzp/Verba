@@ -180,7 +180,7 @@ private struct ManualEntryView: View {
                 }
                 .controlSize(.regular)
 
-                Text("⌘⏎ to accept")
+                Text("⇥ to accept")
                     .font(PanelTheme.caption)
                     .foregroundStyle(PanelTheme.textSecondary)
             }

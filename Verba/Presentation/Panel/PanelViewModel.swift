@@ -367,9 +367,15 @@ final class PanelViewModel {
     }
 
     private func handleManualEntry(_ press: KeyPress) -> KeyPress.Result {
-        guard press.key == .return, press.modifiers.contains(.command) else { return .ignored }
-        acceptManualEntry()
-        return .handled
+        if press.key == .tab {
+            acceptManualEntry()
+            return .handled
+        }
+        if press.key == .return, press.modifiers.contains(.command) == false {
+            updateManualDraft(manualDraft + "\n")
+            return .handled
+        }
+        return .ignored
     }
 
     private func handlePicking(_ press: KeyPress, source: SourceText, selectedIndex: Int) -> KeyPress.Result {
@@ -391,7 +397,7 @@ final class PanelViewModel {
             activate(ActionRegistry.all[selectedIndex], source: source)
             return .handled
         }
-        if press.modifiers.contains(.command), Self.isE(press) {
+        if press.key == .tab {
             editCurrentSource()
             return .handled
         }
