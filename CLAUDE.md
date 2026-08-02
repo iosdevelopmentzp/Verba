@@ -28,7 +28,9 @@ know only `Domain`; `App` knows everybody.
 2. No event synthesis (`CGEventPost`) in the MVP.
 3. User text never reaches a log line, an error message, a crash string,
    or a filename.
-4. No API key in the repo, `UserDefaults`, or a plist — Keychain only.
+4. No API key in the repo, `UserDefaults`, or a plist — Keychain only in
+   Release builds. See the Deviations entry on `UserDefaultsSecretStore`
+   for the `DEBUG`-only exception.
 5. The panel must never activate the app or steal focus from the source
    app.
 6. No comments that restate the code.
@@ -222,6 +224,14 @@ know only `Domain`; `App` knows everybody.
   `.frame(width: PanelTheme.width)`, so measurement wraps exactly as the
   final render does; multi-line `Text`s also carry
   `.fixedSize(horizontal: false, vertical: true)`.
+- **Constraint #4 — `DEBUG` builds store the API key in `UserDefaults`,
+  not Keychain.** Every debug run re-signs the app ad-hoc with a fresh
+  identity, so macOS treats it as a new requester and re-prompts for
+  Keychain access on every launch. `UserDefaultsSecretStore` (`Data/Keychain`)
+  is a second `SecretStoring` conformance, plaintext, no `kSecAttrAccessible`
+  protection; `AppContainer.init()` picks it under `#if DEBUG` only —
+  `KeychainSecretStore` is still the sole path in Release. Never let this
+  branch widen to cover anything other than local dev convenience.
 - **Stage 6 — no raster app icon.** The build has no icon generation
   tooling and a hand-rolled placeholder would look worse than the system
   default. `MenuBarExtra` uses the `text.badge.checkmark` SF Symbol, which

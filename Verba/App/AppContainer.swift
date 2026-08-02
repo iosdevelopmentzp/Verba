@@ -28,7 +28,11 @@ final class AppContainer {
         let captureTextUseCase = CaptureTextUseCase(textSource: textSource, languageDetector: languageDetector)
 
         let preferences = UserDefaultsPreferenceStore()
-        let secretStore = KeychainSecretStore(logger: logger)
+        #if DEBUG
+        let secretStore: SecretStoring = UserDefaultsSecretStore()
+        #else
+        let secretStore: SecretStoring = KeychainSecretStore(logger: logger)
+        #endif
         let providerRegistry = ProviderRegistry(clients: [ProviderID.openAI: OpenAIClient(logger: logger)])
         let promptBuilder = PromptBuilder()
         let retryPolicy = RetryPolicy()
