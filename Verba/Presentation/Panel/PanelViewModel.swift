@@ -312,7 +312,8 @@ final class PanelViewModel {
             )
             return .handled
         }
-        if press.key == .return, press.modifiers.contains(.command) == false {
+        // .down-only: a long-press Return in handleResult lands here mid-hold; .repeat must not re-fire it.
+        if press.key == .return, press.phase == .down, press.modifiers.contains(.command) == false {
             activate(ActionRegistry.all[selectedIndex], source: source)
             return .handled
         }
@@ -390,6 +391,9 @@ final class PanelViewModel {
         }
         if press.key == .return, press.modifiers.contains(.command) == false {
             copySelected(at: selectedIndex, result: result)
+            if press.phase == .repeat {
+                state = .picking(source: source, selectedIndex: 0)
+            }
             return .handled
         }
         if press.modifiers.contains(.command), let numberKey = Self.numberKey(for: press), (1...3).contains(numberKey) {
