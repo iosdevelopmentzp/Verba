@@ -4,15 +4,33 @@ struct ActionPickerView: View {
     let sourceText: SourceText
     let selectedIndex: Int
     let onActivate: (TextAction) -> Void
+    let onEdit: () -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 3) {
-            ForEach(Array(ActionRegistry.all.enumerated()), id: \.element.id) { index, action in
-                ActionRowView(action: action, language: sourceText.language, isSelected: index == selectedIndex)
-                    .contentShape(Rectangle())
-                    .onTapGesture { onActivate(action) }
+        VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: 3) {
+                ForEach(Array(ActionRegistry.all.enumerated()), id: \.element.id) { index, action in
+                    ActionRowView(action: action, language: sourceText.language, isSelected: index == selectedIndex)
+                        .contentShape(Rectangle())
+                        .onTapGesture { onActivate(action) }
+                }
             }
+
+            footer
         }
+    }
+
+    private var footer: some View {
+        HStack(spacing: 8) {
+            KeyCapsuleView(label: "⌘E", isHighlighted: false)
+            Text("edit text")
+                .contentShape(Rectangle())
+                .onTapGesture { onEdit() }
+
+            Spacer(minLength: 0)
+        }
+        .font(PanelTheme.caption)
+        .foregroundStyle(PanelTheme.textSecondary)
     }
 }
 

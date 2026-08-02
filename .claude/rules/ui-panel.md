@@ -57,6 +57,7 @@ override var canBecomeMain: Bool { false }
 | `⌃⌥Space` | global | toggle panel |
 | `↑` `↓` | picking | move selection |
 | `⏎` | picking | run the selected action |
+| `⌘E` | picking | edit the captured text — goes to `manualEntry` prefilled with it, origin becomes `.manual` on accept |
 | `1`–`6` | picking, result, failed | run that action directly; `3` / `5` (change tone / humanize) always open the parameter picker instead, preselected to the last tone/level chosen |
 | `↑` `↓` | result | move the highlight across `primary` and its alternatives |
 | `⏎` | result | copy the highlighted option, show HUD |

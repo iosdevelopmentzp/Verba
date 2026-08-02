@@ -130,6 +130,11 @@ final class PanelViewModel {
         state = .picking(source: source, selectedIndex: 0)
     }
 
+    func editCurrentSource() {
+        guard case .picking(let source, _) = state else { return }
+        state = .manualEntry(draft: source.content)
+    }
+
     func activate(_ action: TextAction, source: SourceText) {
         if action.needsParameters {
             openParameterPicker(action: action, source: source)
@@ -384,6 +389,10 @@ final class PanelViewModel {
         }
         if press.key == .return, press.modifiers.contains(.command) == false {
             activate(ActionRegistry.all[selectedIndex], source: source)
+            return .handled
+        }
+        if press.modifiers.contains(.command), Self.isE(press) {
+            editCurrentSource()
             return .handled
         }
         if let numberKey = Self.numberKey(for: press), press.modifiers.contains(.command) == false {

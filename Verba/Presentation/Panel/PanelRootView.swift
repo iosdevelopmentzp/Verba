@@ -39,9 +39,12 @@ struct PanelRootView: View {
 
         case .picking(let source, let selectedIndex):
             withSource(source) {
-                ActionPickerView(sourceText: source, selectedIndex: selectedIndex) { action in
-                    viewModel.activate(action, source: source)
-                }
+                ActionPickerView(
+                    sourceText: source,
+                    selectedIndex: selectedIndex,
+                    onActivate: { action in viewModel.activate(action, source: source) },
+                    onEdit: { viewModel.editCurrentSource() }
+                )
             }
 
         case .parameterPicking(let source, let action, let selectedIndex):
@@ -170,6 +173,12 @@ private struct ManualEntryView: View {
             HStack(spacing: 10) {
                 Button("Accept") { viewModel.acceptManualEntry() }
                     .controlSize(.regular)
+
+                Button("Clear") {
+                    viewModel.updateManualDraft("")
+                    isDraftFocused = true
+                }
+                .controlSize(.regular)
 
                 Text("⌘⏎ to accept")
                     .font(PanelTheme.caption)
