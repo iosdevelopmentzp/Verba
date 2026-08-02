@@ -52,7 +52,10 @@ final class PanelViewModel {
     // MARK: Static
 
     private static let hudDisplayDuration: Duration = .milliseconds(650)
-    private static let shiftedDigitSymbols: [Character: Int] = ["!": 1, "@": 2, "#": 3, "$": 4, "%": 5]
+    private static let shiftedDigitSymbols: [Character: Int] = [
+        "!": 1, "@": 2, "#": 3, "$": 4, "%": 5,
+        "£": 3, "§": 3, "№": 3
+    ]
 
     // MARK: Init
 
@@ -130,12 +133,12 @@ final class PanelViewModel {
 
     func copyPrimary() {
         guard case .result(_, _, let result) = state else { return }
-        copyAndClose(result.primary)
+        copyToPasteboard(result.primary)
     }
 
     func copyAlternative(at index: Int) {
         guard case .result(_, _, let result) = state, result.alternatives.indices.contains(index) else { return }
-        copyAndClose(result.alternatives[index])
+        copyToPasteboard(result.alternatives[index])
     }
 
     func openSettings() {
@@ -230,7 +233,7 @@ final class PanelViewModel {
         }
     }
 
-    private func copyAndClose(_ text: String) {
+    private func copyToPasteboard(_ text: String) {
         task?.cancel()
         task = Task { [weak self] in
             guard let self else { return }
@@ -239,7 +242,7 @@ final class PanelViewModel {
             isHUDVisible = true
             try? await Task.sleep(for: Self.hudDisplayDuration)
             guard Task.isCancelled == false else { return }
-            onRequestClose?()
+            isHUDVisible = false
         }
     }
 

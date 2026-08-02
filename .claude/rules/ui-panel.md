@@ -26,10 +26,10 @@ override var canBecomeMain: Bool { false }
   always light: colors are explicit values, never `.primary` /
   `.secondary` / `.regularMaterial`, which resolve against the system
   appearance and wash out under vibrancy.
-- Dismiss on: Esc, a second hotkey press, or a completed copy. Losing
-  key status (`resignKey`) does **not** dismiss the panel — it must
-  stay up until the user explicitly closes it. Dismissal cancels any
-  in-flight `Task` (see `concurrency.md`).
+- Dismiss on: Esc or a second hotkey press. Losing key status
+  (`resignKey`) and a completed copy do **not** dismiss the panel — it
+  must stay up until the user explicitly closes it. Dismissal cancels
+  any in-flight `Task` (see `concurrency.md`).
 - Re-showing reuses the same panel instance — no window leaks. Verify
   by toggling 20 times and checking `NSApp.windows.count` stays flat.
 
@@ -42,8 +42,8 @@ override var canBecomeMain: Bool { false }
 | `⏎` | picking | run the selected action |
 | `1`–`5` | picking, result, failed | run that action directly |
 | `⇧3` / `⇧5` | picking, result | open the tone / level picker |
-| `⏎` | result | copy `primary`, show HUD, close |
-| `⌘1` `⌘2` `⌘3` | result | copy alternative 1/2/3, show HUD, close |
+| `⏎` | result | copy `primary`, show HUD |
+| `⌘1` `⌘2` `⌘3` | result | copy alternative 1/2/3, show HUD |
 | `⌘⏎` | manualEntry | accept typed text, go to `picking` |
 | `⌘R` | result, failed | re-run the same action |
 | `⎋` | anywhere | cancel and close |
