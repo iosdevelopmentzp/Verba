@@ -26,6 +26,10 @@ final class FloatingPanel: NSPanel {
         becomesKeyOnlyIfNeeded = false
         isMovableByWindowBackground = false
         isReleasedWhenClosed = false
+        isOpaque = false
+        backgroundColor = .clear
+        hasShadow = true
+        appearance = NSAppearance(named: .aqua)
     }
 
     // MARK: Public methods

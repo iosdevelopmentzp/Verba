@@ -8,15 +8,18 @@ struct ResultView: View {
     let onCopyAlternative: (Int) -> Void
     let onRerun: () -> Void
 
+    // MARK: Static
+
+    private static let primaryLineLimit = 14
+    private static let alternativeLineLimit = 4
+
+    // MARK: Body
+
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             header
 
-            Text(result.primary)
-                .font(.body)
-                .textSelection(.enabled)
-                .contentShape(Rectangle())
-                .onTapGesture { onCopyPrimary() }
+            primaryCard
 
             if result.alternatives.isEmpty == false {
                 alternativesSection
@@ -34,7 +37,7 @@ struct ResultView: View {
     private var header: some View {
         HStack(spacing: 8) {
             Text(title)
-                .font(.headline)
+                .font(PanelTheme.title)
 
             Badge(text: tierLabel)
 
@@ -46,6 +49,21 @@ struct ResultView: View {
         }
     }
 
+    private var primaryCard: some View {
+        Text(result.primary)
+            .font(PanelTheme.prominent)
+            .lineSpacing(3)
+            .lineLimit(Self.primaryLineLimit)
+            .fixedSize(horizontal: false, vertical: true)
+            .textSelection(.enabled)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(12)
+            .background(PanelTheme.surface, in: PanelTheme.cardShape)
+            .overlay { PanelTheme.cardShape.strokeBorder(PanelTheme.hairline, lineWidth: 1) }
+            .contentShape(Rectangle())
+            .onTapGesture { onCopyPrimary() }
+    }
+
     private var tierLabel: String {
         switch result.tier {
         case .standard: return "standard"
@@ -54,16 +72,23 @@ struct ResultView: View {
     }
 
     private var alternativesSection: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: 4) {
             ForEach(Array(result.alternatives.enumerated()), id: \.offset) { index, alternative in
-                HStack(alignment: .top, spacing: 8) {
-                    KeyCapsuleView(label: "⌘\(index + 1)")
+                HStack(alignment: .top, spacing: 12) {
+                    KeyCapsuleView(label: "⌘\(index + 1)", isHighlighted: false)
+
                     Text(alternative)
-                        .font(.callout)
+                        .font(PanelTheme.body)
                         .foregroundStyle(.secondary)
+                        .lineSpacing(2)
+                        .lineLimit(Self.alternativeLineLimit)
+                        .fixedSize(horizontal: false, vertical: true)
                         .textSelection(.enabled)
+
                     Spacer(minLength: 0)
                 }
+                .padding(.vertical, 6)
+                .padding(.horizontal, 8)
                 .contentShape(Rectangle())
                 .onTapGesture { onCopyAlternative(index) }
             }
@@ -71,28 +96,34 @@ struct ResultView: View {
     }
 
     private var notesSection: some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: 5) {
             ForEach(result.notes, id: \.self) { note in
-                HStack(alignment: .top, spacing: 6) {
+                HStack(alignment: .top, spacing: 8) {
                     Text("•")
                     Text(note)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
-                .font(.caption)
-                .foregroundStyle(.tertiary)
+                .font(PanelTheme.caption)
+                .foregroundStyle(.secondary)
             }
         }
+        .padding(.horizontal, 2)
     }
 
     private var footer: some View {
-        HStack(spacing: 14) {
-            Text("⏎ copy")
-            Text("⌘R rerun")
+        HStack(spacing: 8) {
+            KeyCapsuleView(label: "⏎", isHighlighted: false)
+            Text("copy")
+
+            KeyCapsuleView(label: "⌘R", isHighlighted: false)
+            Text("rerun")
                 .contentShape(Rectangle())
                 .onTapGesture { onRerun() }
+
             Spacer(minLength: 0)
         }
-        .font(.caption2)
-        .foregroundStyle(.tertiary)
+        .font(PanelTheme.caption)
+        .foregroundStyle(.secondary)
     }
 
     private var title: String {

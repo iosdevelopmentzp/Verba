@@ -16,7 +16,7 @@ final class PanelWindowController: NSObject {
 
     // MARK: Static
 
-    private static let width: CGFloat = 560
+    private static let width: CGFloat = PanelTheme.width
     private static let minimumHeight: CGFloat = 80
     private static let topScreenFraction: CGFloat = 0.28
     private static let animationDuration: TimeInterval = 0.12
@@ -120,6 +120,7 @@ final class PanelWindowController: NSObject {
         frame.origin.y = topEdge - newHeight
         let animate = NSWorkspace.shared.accessibilityDisplayShouldReduceMotion == false
         panel.setFrame(frame, display: true, animate: animate)
+        panel.invalidateShadow()
     }
 
     private func reveal() {

@@ -6,14 +6,16 @@ struct SourcePreviewView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(sourceText.content)
-                .font(.body)
+                .font(PanelTheme.body)
                 .foregroundStyle(.secondary)
+                .lineSpacing(2)
                 .lineLimit(3)
                 .truncationMode(.tail)
+                .fixedSize(horizontal: false, vertical: true)
 
-            HStack(spacing: 6) {
+            HStack(spacing: 8) {
                 Text("\(sourceText.content.count) characters")
-                    .font(.caption.monospacedDigit())
+                    .font(PanelTheme.caption.monospacedDigit())
                     .foregroundStyle(.tertiary)
 
                 if case .pasteboard(isReused: true) = sourceText.origin {
@@ -22,11 +24,11 @@ struct SourcePreviewView: View {
 
                 if sourceText.content.count > InputLimits.hardMax {
                     Text("exceeds \(InputLimits.hardMax.formatted()) character limit")
-                        .font(.caption2)
+                        .font(PanelTheme.caption)
                         .foregroundStyle(.red)
                 } else if sourceText.content.count > InputLimits.softWarn {
                     Text("long input, higher cost")
-                        .font(.caption2)
+                        .font(PanelTheme.caption)
                         .foregroundStyle(.orange)
                 }
             }

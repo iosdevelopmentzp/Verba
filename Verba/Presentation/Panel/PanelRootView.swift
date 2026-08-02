@@ -7,9 +7,12 @@ struct PanelRootView: View {
 
     var body: some View {
         content
-            .padding(24)
-            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(PanelTheme.contentPadding)
+            .frame(width: PanelTheme.width, alignment: .leading)
+            .background(.regularMaterial, in: PanelTheme.panelShape)
+            .overlay { PanelTheme.panelShape.strokeBorder(PanelTheme.hairline, lineWidth: 1) }
             .focusable()
+            .focusEffectDisabled()
             .focused($isRootFocused)
             .onKeyPress { press in viewModel.handle(press) }
             .onAppear { isRootFocused = true }
@@ -123,9 +126,9 @@ struct PanelRootView: View {
         _ source: SourceText,
         @ViewBuilder content: () -> Content
     ) -> some View {
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .leading, spacing: PanelTheme.sectionSpacing) {
             SourcePreviewView(sourceText: source)
-            Divider()
+            HairlineDivider()
             content()
         }
     }
@@ -136,22 +139,27 @@ private struct ManualEntryView: View {
     @FocusState private var isDraftFocused: Bool
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 14) {
             Text("Verba")
-                .font(.title2.weight(.semibold))
+                .font(.system(size: 19, weight: .semibold))
 
             TextField("⌘C some text, or type here", text: draftBinding, axis: .vertical)
                 .textFieldStyle(.plain)
-                .font(.body)
-                .lineLimit(1...5)
+                .font(PanelTheme.prominent)
+                .lineLimit(1...6)
                 .focused($isDraftFocused)
+                .padding(12)
+                .background(PanelTheme.surface, in: PanelTheme.cardShape)
+                .overlay { PanelTheme.cardShape.strokeBorder(PanelTheme.hairline, lineWidth: 1) }
 
-            Button("Accept") { viewModel.acceptManualEntry() }
-                .controlSize(.small)
+            HStack(spacing: 10) {
+                Button("Accept") { viewModel.acceptManualEntry() }
+                    .controlSize(.regular)
 
-            Text("⌘⏎ to accept")
-                .font(.caption2)
-                .foregroundStyle(.tertiary)
+                Text("⌘⏎ to accept")
+                    .font(PanelTheme.caption)
+                    .foregroundStyle(.secondary)
+            }
         }
         .onAppear { isDraftFocused = true }
     }
@@ -169,11 +177,12 @@ private struct BudgetWarningBanner: View {
 
     var body: some View {
         Label(message, systemImage: "exclamationmark.triangle.fill")
-            .font(.caption.weight(.medium))
+            .font(PanelTheme.caption.weight(.medium))
             .foregroundStyle(.orange)
             .padding(.horizontal, 12)
             .padding(.vertical, 6)
             .background(.regularMaterial, in: Capsule())
+            .overlay { Capsule().strokeBorder(PanelTheme.hairline, lineWidth: 1) }
     }
 
     private var message: String {

@@ -6,7 +6,7 @@ struct ActionPickerView: View {
     let onActivate: (TextAction) -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 2) {
+        VStack(alignment: .leading, spacing: 3) {
             ForEach(Array(ActionRegistry.all.enumerated()), id: \.element.id) { index, action in
                 ActionRowView(action: action, language: sourceText.language, isSelected: index == selectedIndex)
                     .contentShape(Rectangle())
@@ -22,25 +22,26 @@ private struct ActionRowView: View {
     let isSelected: Bool
 
     var body: some View {
-        HStack(spacing: 10) {
-            KeyCapsuleView(label: "\(action.numberKey)")
+        HStack(spacing: 12) {
+            KeyCapsuleView(label: "\(action.numberKey)", isHighlighted: isSelected)
 
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: 1) {
                 Text(title)
-                    .font(.body)
+                    .font(PanelTheme.prominent)
+                    .foregroundStyle(isSelected ? Color.white : Color.primary)
 
                 if action.needsParameters {
                     Text("⇧\(action.numberKey) to choose \(parameterName)")
-                        .font(.caption)
-                        .foregroundStyle(.tertiary)
+                        .font(PanelTheme.caption)
+                        .foregroundStyle(isSelected ? Color.white.opacity(0.75) : Color.secondary)
                 }
             }
 
             Spacer(minLength: 0)
         }
-        .padding(.vertical, 6)
-        .padding(.horizontal, 8)
-        .background(isSelected ? Color.accentColor.opacity(0.15) : Color.clear, in: RoundedRectangle(cornerRadius: 6))
+        .padding(.vertical, 9)
+        .padding(.horizontal, 10)
+        .background(isSelected ? PanelTheme.selection : Color.clear, in: PanelTheme.rowShape)
     }
 
     private var title: String {

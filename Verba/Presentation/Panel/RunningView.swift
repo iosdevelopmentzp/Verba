@@ -5,17 +5,21 @@ struct RunningView: View {
     let action: TextAction
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .leading, spacing: 14) {
             HStack(spacing: 10) {
                 ProgressView()
                     .controlSize(.small)
+
                 Text(title)
-                    .font(.headline)
+                    .font(PanelTheme.title)
             }
 
-            Text("⎋ to cancel")
-                .font(.caption)
-                .foregroundStyle(.tertiary)
+            HStack(spacing: 8) {
+                KeyCapsuleView(label: "⎋", isHighlighted: false)
+                Text("to cancel")
+            }
+            .font(PanelTheme.caption)
+            .foregroundStyle(.secondary)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }

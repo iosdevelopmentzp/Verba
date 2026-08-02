@@ -8,12 +8,18 @@ struct ErrorView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text(message)
-                .font(.body)
+            HStack(alignment: .top, spacing: 10) {
+                Image(systemName: "exclamationmark.triangle.fill")
+                    .foregroundStyle(.orange)
+
+                Text(message)
+                    .font(PanelTheme.prominent)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
 
             if let recovery {
                 Button(recovery.title, action: recovery.action)
-                    .controlSize(.small)
+                    .controlSize(.regular)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)

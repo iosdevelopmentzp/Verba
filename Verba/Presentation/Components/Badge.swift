@@ -5,10 +5,10 @@ struct Badge: View {
 
     var body: some View {
         Text(text)
-            .font(.caption2)
-            .foregroundStyle(.tertiary)
-            .padding(.horizontal, 6)
-            .padding(.vertical, 2)
-            .background(.quaternary, in: Capsule())
+            .font(PanelTheme.caption)
+            .foregroundStyle(.secondary)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 3)
+            .background(PanelTheme.keyCap, in: Capsule())
     }
 }

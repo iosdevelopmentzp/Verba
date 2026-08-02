@@ -9,21 +9,24 @@ struct ParameterPickerView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text(title)
-                .font(.headline)
+                .font(PanelTheme.title)
 
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: 3) {
                 ForEach(Array(optionTitles.enumerated()), id: \.offset) { index, optionTitle in
-                    HStack(spacing: 10) {
-                        KeyCapsuleView(label: "\(index + 1)")
+                    let isSelected = index == selectedIndex
+
+                    HStack(spacing: 12) {
+                        KeyCapsuleView(label: "\(index + 1)", isHighlighted: isSelected)
+
                         Text(optionTitle)
+                            .font(PanelTheme.prominent)
+                            .foregroundStyle(isSelected ? Color.white : Color.primary)
+
                         Spacer(minLength: 0)
                     }
-                    .padding(.vertical, 6)
-                    .padding(.horizontal, 8)
-                    .background(
-                        index == selectedIndex ? Color.accentColor.opacity(0.15) : Color.clear,
-                        in: RoundedRectangle(cornerRadius: 6)
-                    )
+                    .padding(.vertical, 9)
+                    .padding(.horizontal, 10)
+                    .background(isSelected ? PanelTheme.selection : Color.clear, in: PanelTheme.rowShape)
                     .contentShape(Rectangle())
                     .onTapGesture { onChoose(index) }
                 }

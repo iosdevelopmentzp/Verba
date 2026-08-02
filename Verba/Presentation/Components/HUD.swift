@@ -5,10 +5,11 @@ struct HUD: View {
 
     var body: some View {
         Label(message, systemImage: "checkmark.circle.fill")
-            .font(.callout.weight(.medium))
-            .padding(.horizontal, 14)
-            .padding(.vertical, 8)
-            .background(.regularMaterial, in: Capsule())
-            .shadow(radius: 6, y: 2)
+            .font(PanelTheme.secondary.weight(.medium))
+            .foregroundStyle(.white)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 9)
+            .background(Color.accentColor, in: Capsule())
+            .shadow(color: .black.opacity(0.18), radius: 8, y: 3)
     }
 }
