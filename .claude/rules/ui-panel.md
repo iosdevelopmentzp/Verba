@@ -144,8 +144,16 @@ every state. Collapsed it is a `PanelTheme.sidebarRailWidth` strip with a
 vertical "OPTIONS" label; tapping anywhere on it expands to
 `PanelTheme.sidebarWidth`. The choice persists via
 `PreferenceStoring.isSidebarExpanded`. It holds Style (creativity), the
-translate language pair, the model tier, and the diff toggle — groups appear
-only when they apply to the current action. Changing any of them re-runs the
+model tier, the diff toggle and the theme — groups appear only when they apply
+to the current action, and the column scrolls so a new group can never overflow
+it.
+
+The translate language pair deliberately does **not** live here.
+`TranslationBarView` sits directly above the suggestions on the result screen
+whenever the action is `translate`: it is contextual to one action, it is the
+thing the user is looking at when they want to change it, and it states the
+resolved pair in words. A generic options drawer is the wrong home for a control
+that only ever applies to one sixth of the actions. Changing any of them re-runs the
 current action.
 
 Because the sidebar changes the window's **width**, `PanelWindowController`

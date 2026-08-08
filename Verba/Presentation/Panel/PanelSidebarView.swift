@@ -54,30 +54,6 @@ struct PanelSidebarView: View {
                     }
                 }
 
-                if viewModel.canConfigureLanguages {
-                    group("From", key: "⌘⇧T") {
-                        chips(
-                            ["Auto"] + TextLanguage.selectable.map(\.shortCode),
-                            selected: sourceChipIndex
-                        ) { index in
-                            viewModel.setSourceLanguage(index == 0 ? nil : TextLanguage.selectable[index - 1])
-                        }
-                    }
-
-                    group("Into", key: "⌘T") {
-                        chips(
-                            TextLanguage.selectable.map(\.shortCode),
-                            selected: TextLanguage.selectable.firstIndex(of: viewModel.targetLanguage)
-                        ) { index in
-                            viewModel.setTargetLanguage(TextLanguage.selectable[index])
-                        }
-
-                        Text(languageSummary)
-                            .font(PanelTheme.caption)
-                            .foregroundStyle(PanelTheme.textTertiary)
-                    }
-                }
-
                 group("Model", key: nil) {
                     chips(["Standard", "Economy"], selected: viewModel.economyMode ? 1 : 0) { index in
                         viewModel.setEconomyMode(index == 1)
@@ -183,12 +159,6 @@ struct PanelSidebarView: View {
         .selectableRow(isSelected: isSelected)
         .contentShape(Rectangle())
         .onTapGesture { select() }
-    }
-
-    private var sourceChipIndex: Int {
-        guard let source = viewModel.sourceLanguage,
-              let index = TextLanguage.selectable.firstIndex(of: source) else { return 0 }
-        return index + 1
     }
 
     private var languageSummary: String {

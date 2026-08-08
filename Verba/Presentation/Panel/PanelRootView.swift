@@ -81,6 +81,10 @@ struct PanelRootView: View {
         case .result(let source, let action, let result, let selectedIndex):
             withSource(source) {
                 VStack(alignment: .leading, spacing: PanelTheme.sectionSpacing) {
+                    if action.id == .translate {
+                        TranslationBarView(viewModel: viewModel)
+                    }
+
                     ResultView(
                         sourceText: source,
                         action: action,

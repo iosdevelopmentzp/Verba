@@ -494,10 +494,6 @@ final class PanelViewModel {
         rerunCurrentAction()
     }
 
-    var canConfigureLanguages: Bool {
-        currentAction?.id == .translate
-    }
-
     var canToggleDiff: Bool {
         currentAction?.supportsDiff == true
     }
