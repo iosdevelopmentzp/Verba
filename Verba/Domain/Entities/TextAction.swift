@@ -10,7 +10,6 @@ struct TextAction: Sendable, Identifiable, Equatable {
 
     let id: Kind
     let titleEnglish: String
-    let titleRussian: String
     let numberKey: Int
     let templateID: String
     let tier: ModelTier

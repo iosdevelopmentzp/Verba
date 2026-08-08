@@ -10,6 +10,7 @@ protocol PreferenceStoring: AnyObject, Sendable {
     var lastCreativity: Creativity { get set }
     var isDiffVisible: Bool { get set }
     var isSidebarExpanded: Bool { get set }
+    var panelAppearance: PanelAppearance { get set }
     var panelOriginX: Double? { get set }
     var panelTopY: Double? { get set }
     var lastSourceLanguage: TextLanguage? { get set }

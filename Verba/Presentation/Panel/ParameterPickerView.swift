@@ -52,7 +52,7 @@ struct ParameterPickerView: View {
     }
 
     private var title: String {
-        sourceText.language == .russian ? action.titleRussian : action.titleEnglish
+        action.titleEnglish
     }
 
     private var optionTitles: [String] {

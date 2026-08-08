@@ -74,6 +74,10 @@ final class PanelWindowController: NSObject {
         viewModel.onCopyCompleted = {
             NSSound(named: Self.copySoundName)?.play()
         }
+        viewModel.onAppearanceChanged = { [weak self] appearance in
+            self?.panel.apply(appearance)
+        }
+        panel.apply(viewModel.panelAppearance)
         panel.onCopyRequested = { [weak viewModel] in viewModel?.copyOriginal() }
 
         let hostingView = NSHostingView(rootView: PanelRootView(viewModel: viewModel))

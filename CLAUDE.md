@@ -205,6 +205,18 @@ know only `Domain`; `App` knows everybody.
   identity. Rather than ship a toggle that silently does nothing, no
   synthesis code exists in the tree. Revisit only with a Developer ID
   certificate; the clipboard path (⌘C by hand) remains the primary capture.
+- **The panel's theme is user-selectable (Auto/Light/Dark), which supersedes
+  the "always light" rule below.** The ban on semantic colors and materials
+  still stands and is the reason this works: because every `PanelTheme` colour
+  is an explicit value, adding a second explicit value per token turns each one
+  into a two-branch dynamic `NSColor` that AppKit resolves against the window's
+  `NSAppearance`. `FloatingPanel.apply(_:)` sets that appearance from
+  `PreferenceStoring.panelAppearance`. No call site changed, no SwiftUI state
+  drives it, and `.regularMaterial`/`.primary`/`.secondary` remain banned —
+  a dynamic colour with two hand-picked values is not vibrancy.
+  `PanelTheme` importing `AppKit` for `NSColor` is a knowing exception to the
+  `architecture.md` import table; it is rendering vocabulary, not a `Data` type,
+  and `Scripts/check-layers.sh` does not flag it.
 - **Visual pass — the panel is always light, and never uses semantic
   colors or materials.** The panel shipped rendering in the system dark
   appearance at 10–13pt with `.regularMaterial` behind it, which the user

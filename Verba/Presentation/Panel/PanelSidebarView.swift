@@ -18,8 +18,10 @@ struct PanelSidebarView: View {
         .background(PanelTheme.sidebarBackground)
     }
 
+    // MARK: - Collapsed
+
     private var rail: some View {
-        VStack(spacing: 6) {
+        VStack(spacing: 8) {
             chevron
             Text("OPTIONS")
                 .font(PanelTheme.sectionLabel)
@@ -35,75 +37,89 @@ struct PanelSidebarView: View {
         .onTapGesture { viewModel.toggleSidebar() }
     }
 
+    // MARK: - Expanded
+
     private var expanded: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            HStack(spacing: 6) {
-                chevron
-                Text("OPTIONS")
-                    .font(PanelTheme.sectionLabel)
-                    .foregroundStyle(PanelTheme.textTertiary)
+        ScrollView {
+            VStack(alignment: .leading, spacing: 12) {
+                header
+
+                group("Style", key: "⌘J") {
+                    ForEach(Creativity.allCases, id: \.self) { option in
+                        listRow(
+                            title: option.displayName,
+                            detail: option.detail,
+                            isSelected: option == viewModel.creativity
+                        ) { viewModel.setCreativity(option) }
+                    }
+                }
+
+                if viewModel.canConfigureLanguages {
+                    group("From", key: "⌘⇧T") {
+                        chips(
+                            ["Auto"] + TextLanguage.selectable.map(\.shortCode),
+                            selected: sourceChipIndex
+                        ) { index in
+                            viewModel.setSourceLanguage(index == 0 ? nil : TextLanguage.selectable[index - 1])
+                        }
+                    }
+
+                    group("Into", key: "⌘T") {
+                        chips(
+                            TextLanguage.selectable.map(\.shortCode),
+                            selected: TextLanguage.selectable.firstIndex(of: viewModel.targetLanguage)
+                        ) { index in
+                            viewModel.setTargetLanguage(TextLanguage.selectable[index])
+                        }
+
+                        Text(languageSummary)
+                            .font(PanelTheme.caption)
+                            .foregroundStyle(PanelTheme.textTertiary)
+                    }
+                }
+
+                group("Model", key: nil) {
+                    chips(["Standard", "Economy"], selected: viewModel.economyMode ? 1 : 0) { index in
+                        viewModel.setEconomyMode(index == 1)
+                    }
+                }
+
+                if viewModel.canToggleDiff {
+                    group("Diff", key: "⌘D") {
+                        chips(["Shown", "Hidden"], selected: viewModel.isDiffShown ? 0 : 1) { index in
+                            guard (index == 0) != viewModel.isDiffShown else { return }
+                            viewModel.toggleDiff()
+                        }
+                    }
+                }
+
+                group("Theme", key: nil) {
+                    chips(
+                        PanelAppearance.allCases.map(\.displayName),
+                        selected: PanelAppearance.allCases.firstIndex(of: viewModel.panelAppearance)
+                    ) { index in
+                        viewModel.setPanelAppearance(PanelAppearance.allCases[index])
+                    }
+                }
+
                 Spacer(minLength: 0)
             }
-            .contentShape(Rectangle())
-            .onTapGesture { viewModel.toggleSidebar() }
+            .padding(.horizontal, 11)
+            .padding(.vertical, 11)
+        }
+        .frame(width: PanelTheme.sidebarWidth)
+    }
 
-            group(title: "Style", keyLabel: "⌘J") {
-                ForEach(Creativity.allCases, id: \.self) { option in
-                    OptionRow(
-                        title: option.displayName,
-                        detail: option.detail,
-                        isSelected: option == viewModel.creativity
-                    )
-                    .onTapGesture { viewModel.setCreativity(option) }
-                }
-            }
-
-            if viewModel.canConfigureLanguages {
-                group(title: "Translate from", keyLabel: "⌘⇧T") {
-                    OptionRow(title: "Detect", detail: nil, isSelected: viewModel.sourceLanguage == nil)
-                        .onTapGesture { viewModel.setSourceLanguage(nil) }
-
-                    ForEach(TextLanguage.selectable, id: \.self) { language in
-                        OptionRow(
-                            title: language.displayName,
-                            detail: nil,
-                            isSelected: viewModel.sourceLanguage == language
-                        )
-                        .onTapGesture { viewModel.setSourceLanguage(language) }
-                    }
-                }
-
-                group(title: "Translate into", keyLabel: "⌘T") {
-                    ForEach(TextLanguage.selectable, id: \.self) { language in
-                        OptionRow(
-                            title: language.displayName,
-                            detail: nil,
-                            isSelected: viewModel.targetLanguage == language
-                        )
-                        .onTapGesture { viewModel.setTargetLanguage(language) }
-                    }
-                }
-            }
-
-            group(title: "Model", keyLabel: nil) {
-                OptionRow(title: "Standard", detail: "Better output", isSelected: viewModel.economyMode == false)
-                    .onTapGesture { viewModel.setEconomyMode(false) }
-                OptionRow(title: "Economy", detail: "Cheaper, faster", isSelected: viewModel.economyMode)
-                    .onTapGesture { viewModel.setEconomyMode(true) }
-            }
-
-            if viewModel.canToggleDiff {
-                group(title: "Diff", keyLabel: "⌘D") {
-                    OptionRow(title: viewModel.isDiffShown ? "Shown" : "Hidden", detail: nil, isSelected: viewModel.isDiffShown)
-                        .onTapGesture { viewModel.toggleDiff() }
-                }
-            }
-
+    private var header: some View {
+        HStack(spacing: 6) {
+            chevron
+            Text("OPTIONS")
+                .font(PanelTheme.sectionLabel)
+                .foregroundStyle(PanelTheme.textTertiary)
             Spacer(minLength: 0)
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 12)
-        .frame(width: PanelTheme.sidebarWidth, alignment: .leading)
+        .contentShape(Rectangle())
+        .onTapGesture { viewModel.toggleSidebar() }
     }
 
     private var chevron: some View {
@@ -112,9 +128,11 @@ struct PanelSidebarView: View {
             .foregroundStyle(PanelTheme.textTertiary)
     }
 
+    // MARK: - Building blocks
+
     private func group<Content: View>(
-        title: String,
-        keyLabel: String?,
+        _ title: String,
+        key: String?,
         @ViewBuilder content: () -> Content
     ) -> some View {
         VStack(alignment: .leading, spacing: 4) {
@@ -123,39 +141,59 @@ struct PanelSidebarView: View {
                     .font(PanelTheme.sectionLabel)
                     .foregroundStyle(PanelTheme.textTertiary)
                 Spacer(minLength: 0)
-                if let keyLabel {
-                    KeyCapsuleView(label: keyLabel, isHighlighted: false)
+                if let key {
+                    KeyCapsuleView(label: key, isHighlighted: false)
                 }
             }
             content()
         }
     }
-}
 
-private struct OptionRow: View {
-    let title: String
-    let detail: String?
-    let isSelected: Bool
-
-    var body: some View {
-        HStack(alignment: .firstTextBaseline, spacing: 6) {
-            VStack(alignment: .leading, spacing: 1) {
-                Text(title)
-                    .font(PanelTheme.secondary)
-                    .foregroundStyle(PanelTheme.textPrimary)
-                if let detail {
-                    Text(detail)
-                        .font(PanelTheme.caption)
-                        .foregroundStyle(PanelTheme.textTertiary)
-                }
+    private func chips(
+        _ labels: [String],
+        selected: Int?,
+        select: @escaping (Int) -> Void
+    ) -> some View {
+        HStack(spacing: 4) {
+            ForEach(Array(labels.enumerated()), id: \.offset) { index, label in
+                ChipView(label: label, isSelected: index == selected)
+                    .onTapGesture { select(index) }
             }
             Spacer(minLength: 0)
         }
+    }
+
+    private func listRow(
+        title: String,
+        detail: String,
+        isSelected: Bool,
+        select: @escaping () -> Void
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text(title)
+                .font(PanelTheme.secondary)
+                .foregroundStyle(PanelTheme.textPrimary)
+            Text(detail)
+                .font(PanelTheme.caption)
+                .foregroundStyle(PanelTheme.textTertiary)
+        }
         .padding(.horizontal, 8)
-        .padding(.vertical, 5)
+        .padding(.vertical, 4)
         .frame(maxWidth: .infinity, alignment: .leading)
         .selectableRow(isSelected: isSelected)
         .contentShape(Rectangle())
+        .onTapGesture { select() }
+    }
+
+    private var sourceChipIndex: Int {
+        guard let source = viewModel.sourceLanguage,
+              let index = TextLanguage.selectable.firstIndex(of: source) else { return 0 }
+        return index + 1
+    }
+
+    private var languageSummary: String {
+        let from = viewModel.sourceLanguage?.displayName ?? "Detected"
+        return "\(from) → \(viewModel.targetLanguage.displayName)"
     }
 }
 
@@ -165,6 +203,28 @@ private extension Creativity {
         case .precise: return "Stay literal"
         case .balanced: return "Default"
         case .creative: return "Bolder rewrites"
+        }
+    }
+}
+
+extension PanelAppearance {
+    var displayName: String {
+        switch self {
+        case .system: return "Auto"
+        case .light: return "Light"
+        case .dark: return "Dark"
+        }
+    }
+}
+
+extension TextLanguage {
+    var shortCode: String {
+        switch self {
+        case .english: return "EN"
+        case .russian: return "RU"
+        case .ukrainian: return "UK"
+        case .spanish: return "ES"
+        case .other: return "—"
         }
     }
 }

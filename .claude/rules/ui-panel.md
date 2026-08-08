@@ -34,10 +34,19 @@ override var canBecomeMain: Bool { false }
   which `PanelRootView`'s root `ScrollView` takes over — content never
   pushes the window off-screen. 0.12s fade (skip the animation when
   Reduce Motion is on).
-- Every metric, font, and color comes from `PanelTheme`. The panel is
-  always light: colors are explicit values, never `.primary` /
-  `.secondary` / `.regularMaterial`, which resolve against the system
-  appearance and wash out under vibrancy.
+- Every metric, font, and color comes from `PanelTheme`. Colors are still
+  explicit values, never `.primary` / `.secondary` / `.regularMaterial`, which
+  resolve against the system appearance and wash out under vibrancy — but each
+  one is now a two-branch dynamic `NSColor`, so the panel follows
+  `PreferenceStoring.panelAppearance` (Auto / Light / Dark, chosen from the
+  sidebar). `FloatingPanel.apply(_:)` sets the window's `NSAppearance` and
+  AppKit resolves every colour from there; no SwiftUI state is involved and no
+  call site changed. `.aqua` remains the default.
+- **The interface is always English.** `TextAction` carries a single
+  `titleEnglish`; the old `titleRussian` and the four
+  `language == .russian ? … : …` switches are gone. `TextLanguage.displayName`
+  is a UI string and reads in English too — the detected language of the user's
+  text must never change the language of Verba's own chrome.
 - Dismiss on: Esc or a second hotkey press. Losing key status
   (`resignKey`) and a completed copy do **not** dismiss the panel — it
   must stay up until the user explicitly closes it. Dismissal cancels

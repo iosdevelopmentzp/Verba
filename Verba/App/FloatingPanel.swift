@@ -35,6 +35,14 @@ final class FloatingPanel: NSPanel {
 
     // MARK: Public methods
 
+    func apply(_ panelAppearance: PanelAppearance) {
+        switch panelAppearance {
+        case .system: appearance = nil
+        case .light: appearance = NSAppearance(named: .aqua)
+        case .dark: appearance = NSAppearance(named: .darkAqua)
+        }
+    }
+
     override func cancelOperation(_ sender: Any?) {
         onCancel?()
     }

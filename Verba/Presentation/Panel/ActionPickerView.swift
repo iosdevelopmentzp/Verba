@@ -10,7 +10,7 @@ struct ActionPickerView: View {
         VStack(alignment: .leading, spacing: 8) {
             VStack(alignment: .leading, spacing: 3) {
                 ForEach(Array(ActionRegistry.all.enumerated()), id: \.element.id) { index, action in
-                    ActionRowView(action: action, language: sourceText.language, isSelected: index == selectedIndex)
+                    ActionRowView(action: action, isSelected: index == selectedIndex)
                         .contentShape(Rectangle())
                         .onTapGesture { onActivate(action) }
                 }
@@ -36,7 +36,6 @@ struct ActionPickerView: View {
 
 private struct ActionRowView: View {
     let action: TextAction
-    let language: TextLanguage
     let isSelected: Bool
 
     var body: some View {
@@ -55,6 +54,6 @@ private struct ActionRowView: View {
     }
 
     private var title: String {
-        language == .russian ? action.titleRussian : action.titleEnglish
+        action.titleEnglish
     }
 }

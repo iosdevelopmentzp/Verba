@@ -87,9 +87,9 @@ extension TextLanguage {
     var displayName: String {
         switch self {
         case .english: return "English"
-        case .russian: return "Русский"
-        case .ukrainian: return "Українська"
-        case .spanish: return "Español"
+        case .russian: return "Russian"
+        case .ukrainian: return "Ukrainian"
+        case .spanish: return "Spanish"
         case .other: return "Other"
         }
     }

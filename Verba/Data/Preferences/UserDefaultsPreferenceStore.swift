@@ -53,6 +53,11 @@ final class UserDefaultsPreferenceStore: PreferenceStoring {
         set { defaults.set(newValue, forKey: Keys.isSidebarExpanded) }
     }
 
+    var panelAppearance: PanelAppearance {
+        get { PanelAppearance(rawValue: defaults.string(forKey: Keys.panelAppearance) ?? "") ?? .light }
+        set { defaults.set(newValue.rawValue, forKey: Keys.panelAppearance) }
+    }
+
     var panelOriginX: Double? {
         get { defaults.object(forKey: Keys.panelOriginX) as? Double }
         set { defaults.set(newValue, forKey: Keys.panelOriginX) }
@@ -116,6 +121,7 @@ final class UserDefaultsPreferenceStore: PreferenceStoring {
         static let lastCreativity = "preferences.lastCreativity"
         static let isDiffVisible = "preferences.isDiffVisible"
         static let isSidebarExpanded = "preferences.isSidebarExpanded"
+        static let panelAppearance = "preferences.panelAppearance"
         static let panelOriginX = "preferences.panelOriginX"
         static let panelTopY = "preferences.panelTopY"
         static let lastSourceLanguage = "preferences.lastSourceLanguage"

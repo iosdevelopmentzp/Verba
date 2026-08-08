@@ -59,6 +59,7 @@ final class PanelViewModel {
     private(set) var explanation: ExplanationState?
     private(set) var isDiffShown: Bool
     private(set) var isSidebarExpanded: Bool
+    private(set) var panelAppearance: PanelAppearance
     private(set) var creativity: Creativity
     private(set) var extraInstructions: [String: String] = [:]
     private(set) var promptEditor: PromptEditorState?
@@ -69,6 +70,7 @@ final class PanelViewModel {
     var onOpenSettingsRequested: (() -> Void)?
     var onOpenSystemSettingsRequested: (() -> Void)?
     var onCopyCompleted: (() -> Void)?
+    var onAppearanceChanged: ((PanelAppearance) -> Void)?
     var maxContentHeight: CGFloat?
 
     var isOverBudget: Bool {
@@ -139,6 +141,7 @@ final class PanelViewModel {
         self.isDiffShown = preferences.isDiffVisible
         self.creativity = preferences.lastCreativity
         self.isSidebarExpanded = preferences.isSidebarExpanded
+        self.panelAppearance = preferences.panelAppearance
     }
 
     // MARK: Public methods
@@ -467,6 +470,13 @@ final class PanelViewModel {
 
     static func isInstructionRow(_ index: Int, result: ActionResult) -> Bool {
         index == instructionRowIndex(for: result)
+    }
+
+    func setPanelAppearance(_ value: PanelAppearance) {
+        guard value != panelAppearance else { return }
+        panelAppearance = value
+        preferences.panelAppearance = value
+        onAppearanceChanged?(value)
     }
 
     func toggleSidebar() {
