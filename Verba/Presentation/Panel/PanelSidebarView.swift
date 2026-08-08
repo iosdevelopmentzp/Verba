@@ -91,6 +91,8 @@ struct PanelSidebarView: View {
             chevron
             Text("OPTIONS")
                 .font(PanelTheme.sectionLabel)
+                .lineLimit(1)
+                .fixedSize()
                 .foregroundStyle(PanelTheme.textTertiary)
             Spacer(minLength: 0)
         }
@@ -115,6 +117,8 @@ struct PanelSidebarView: View {
             HStack(spacing: 6) {
                 Text(title.uppercased())
                     .font(PanelTheme.sectionLabel)
+                    .lineLimit(1)
+                    .fixedSize()
                     .foregroundStyle(PanelTheme.textTertiary)
                 Spacer(minLength: 0)
                 if let key {
@@ -148,9 +152,11 @@ struct PanelSidebarView: View {
         VStack(alignment: .leading, spacing: 0) {
             Text(title)
                 .font(PanelTheme.secondary)
+                .lineLimit(1)
                 .foregroundStyle(PanelTheme.textPrimary)
             Text(detail)
                 .font(PanelTheme.caption)
+                .lineLimit(1)
                 .foregroundStyle(PanelTheme.textTertiary)
         }
         .padding(.horizontal, 8)

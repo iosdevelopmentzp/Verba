@@ -160,6 +160,18 @@ Because the sidebar changes the window's **width**, `PanelWindowController`
 derives its width from `PanelTheme.panelWidth(isSidebarExpanded:)` rather than a
 constant, and `resizeToFitContent()` compares width as well as height.
 
+## Chips and key capsules must never wrap
+
+`ChipView` and `KeyCapsuleView` carry `lineLimit(1)` + `fixedSize()`. Without
+them a crowded `HStack` compresses its children instead of overflowing, and a
+short label breaks mid-word — "Auto" rendered as "Aut/o" inside a circle, and
+"⌘⇧T" split across two lines, once the translate bar put nine chips, two
+capsules and a summary on one 620pt row.
+
+`fixedSize()` is the guard, not the fix: a row still has to actually fit.
+`TranslationBarView` therefore puts From and Into on separate rows with the
+resolved direction on a third, rather than competing for one line.
+
 ## Result-screen controls
 
 `ResultControlsView` owns what sits below `ResultView`: the extra-instruction

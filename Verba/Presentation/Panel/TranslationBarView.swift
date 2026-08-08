@@ -3,6 +3,12 @@ import SwiftUI
 struct TranslationBarView: View {
     let viewModel: PanelViewModel
 
+    // MARK: Static
+
+    private static let labelWidth: CGFloat = 36
+
+    // MARK: Body
+
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             row(title: "From", key: "⌘⇧T") {
@@ -13,15 +19,6 @@ struct TranslationBarView: View {
                     ChipView(label: language.shortCode, isSelected: viewModel.sourceLanguage == language)
                         .onTapGesture { viewModel.setSourceLanguage(language) }
                 }
-
-                Spacer(minLength: 0)
-
-                if viewModel.sourceLanguage == nil {
-                    Text(detectedSummary)
-                        .font(PanelTheme.caption)
-                        .lineLimit(1)
-                        .foregroundStyle(PanelTheme.textTertiary)
-                }
             }
 
             row(title: "Into", key: "⌘T") {
@@ -29,14 +26,14 @@ struct TranslationBarView: View {
                     ChipView(label: language.shortCode, isSelected: viewModel.targetLanguage == language)
                         .onTapGesture { viewModel.setTargetLanguage(language) }
                 }
-
-                Spacer(minLength: 0)
-
-                Text(viewModel.targetLanguage.displayName)
-                    .font(PanelTheme.caption)
-                    .lineLimit(1)
-                    .foregroundStyle(PanelTheme.textTertiary)
             }
+
+            Text(summary)
+                .font(PanelTheme.caption)
+                .lineLimit(1)
+                .truncationMode(.tail)
+                .foregroundStyle(PanelTheme.textTertiary)
+                .padding(.leading, Self.labelWidth)
         }
         .padding(.horizontal, 10)
         .padding(.vertical, 8)
@@ -54,16 +51,26 @@ struct TranslationBarView: View {
             Text(title.uppercased())
                 .font(PanelTheme.sectionLabel)
                 .lineLimit(1)
+                .fixedSize()
                 .foregroundStyle(PanelTheme.textTertiary)
-                .frame(width: 34, alignment: .leading)
+                .frame(width: Self.labelWidth, alignment: .leading)
 
             KeyCapsuleView(label: key, isHighlighted: false)
 
             content()
+
+            Spacer(minLength: 0)
         }
     }
 
-    private var detectedSummary: String {
+    private var summary: String {
+        "\(sourceName) → \(viewModel.targetLanguage.displayName)"
+    }
+
+    private var sourceName: String {
+        guard viewModel.sourceLanguage == nil else {
+            return viewModel.sourceLanguage?.displayName ?? ""
+        }
         guard let detected = viewModel.detectedLanguage, detected != .other else {
             return "Detected by the model"
         }
