@@ -60,6 +60,7 @@ final class AppContainer {
             deliverResultUseCase: deliverResultUseCase,
             explainFixesUseCase: explainFixesUseCase,
             promptPreview: PromptPreview(promptBuilder: promptBuilder),
+            speechSynthesizer: SystemSpeechSynthesizer(),
             preferences: preferences,
             usageMeter: usageMeter
         )

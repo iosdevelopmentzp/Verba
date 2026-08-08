@@ -30,6 +30,11 @@ enum PanelState: Equatable {
     case failed(source: SourceText?, action: TextAction?, error: AppError)
 }
 
+enum SpeechTarget: Equatable {
+    case source
+    case option(Int)
+}
+
 enum ExplanationState: Equatable {
     case loading
     case loaded([FixExplanation])
@@ -47,6 +52,7 @@ final class PanelViewModel {
     private let deliverResultUseCase: DeliverResultUseCase
     private let explainFixesUseCase: ExplainFixesUseCase
     private let promptPreview: PromptPreviewing
+    private let speechSynthesizer: SpeechSynthesizing
     private let preferences: PreferenceStoring
     private let usageMeter: UsageMetering
     private let logger: AppLogger
@@ -64,6 +70,7 @@ final class PanelViewModel {
     private(set) var extraInstructions: [String: String] = [:]
     private(set) var promptEditor: PromptEditorState?
     private(set) var instructionEditor: InstructionEditorState?
+    private(set) var speakingTarget: SpeechTarget?
     private(set) var rootFocusRequestID = 0
 
     var onRequestClose: (() -> Void)?
@@ -87,6 +94,11 @@ final class PanelViewModel {
         currentParameters.sourceLanguage
     }
 
+    var speakingOption: Int? {
+        guard case .option(let index) = speakingTarget else { return nil }
+        return index
+    }
+
     var detectedLanguage: TextLanguage? {
         currentSource?.language
     }
@@ -103,6 +115,7 @@ final class PanelViewModel {
         _ = isSidebarExpanded
         _ = promptEditor
         _ = instructionEditor
+        _ = speakingTarget
         _ = explanation
         _ = usageSnapshot
     }
@@ -131,6 +144,7 @@ final class PanelViewModel {
         deliverResultUseCase: DeliverResultUseCase,
         explainFixesUseCase: ExplainFixesUseCase,
         promptPreview: PromptPreviewing,
+        speechSynthesizer: SpeechSynthesizing,
         preferences: PreferenceStoring,
         usageMeter: UsageMetering,
         logger: AppLogger
@@ -140,6 +154,7 @@ final class PanelViewModel {
         self.deliverResultUseCase = deliverResultUseCase
         self.explainFixesUseCase = explainFixesUseCase
         self.promptPreview = promptPreview
+        self.speechSynthesizer = speechSynthesizer
         self.preferences = preferences
         self.usageMeter = usageMeter
         self.logger = logger
@@ -177,6 +192,7 @@ final class PanelViewModel {
         extraInstructions = [:]
         sessionPromptOverrides = [:]
         instructionEditor = nil
+        stopSpeech()
         promptEditor = nil
         dismissExplanation()
         state = .capturing
@@ -484,6 +500,34 @@ final class PanelViewModel {
         onAppearanceChanged?(value)
     }
 
+    func startSpeechObservation() {
+        speechSynthesizer.onFinish = { [weak self] in
+            guard let self else { return }
+            speakingTarget = nil
+        }
+    }
+
+    func toggleSpeech(for target: SpeechTarget) {
+        guard speakingTarget != target else {
+            stopSpeech()
+            return
+        }
+        guard let text = speechText(for: target), text.isEmpty == false else { return }
+        speakingTarget = target
+        speechSynthesizer.speak(text, language: speechLanguage(for: target))
+    }
+
+    func speakSelectedOption() {
+        guard case .result(_, _, let result, let selectedIndex) = state,
+              Self.isInstructionRow(selectedIndex, result: result) == false else { return }
+        toggleSpeech(for: .option(selectedIndex))
+    }
+
+    func stopSpeech() {
+        speechSynthesizer.stop()
+        speakingTarget = nil
+    }
+
     func toggleSidebar() {
         isSidebarExpanded.toggle()
         preferences.isSidebarExpanded = isSidebarExpanded
@@ -641,6 +685,28 @@ final class PanelViewModel {
         return resolved
     }
 
+    private func speechText(for target: SpeechTarget) -> String? {
+        switch target {
+        case .source:
+            return currentSource?.content
+        case .option(let index):
+            guard case .result(_, _, let result, _) = state else { return nil }
+            return Self.text(at: index, result: result)
+        }
+    }
+
+    private func speechLanguage(for target: SpeechTarget) -> TextLanguage {
+        switch target {
+        case .source:
+            return currentParameters.sourceLanguage ?? currentSource?.language ?? .other
+        case .option:
+            guard currentAction?.id == .translate else {
+                return currentSource?.language ?? .other
+            }
+            return targetLanguage
+        }
+    }
+
     private func rerunCurrentAction() {
         guard let action = currentAction, let source = currentSource else { return }
         run(action: action, source: source, parameters: currentParameters, bypassCache: false)
@@ -648,6 +714,7 @@ final class PanelViewModel {
 
     private func run(action: TextAction, source: SourceText, parameters: ActionParameters, bypassCache: Bool) {
         task?.cancel()
+        stopSpeech()
         rootFocusRequestID += 1
         let parameters = resolvedParameters(parameters, action: action, source: source)
         currentParameters = parameters
@@ -873,6 +940,10 @@ final class PanelViewModel {
         }
         if press.modifiers.contains(.command), Self.isD(press), action.supportsDiff {
             toggleDiff()
+            return .handled
+        }
+        if press.modifiers.contains(.command), Self.isLetter(press, "l") {
+            speakSelectedOption()
             return .handled
         }
         if press.modifiers.contains(.command), Self.isLetter(press, "j") {

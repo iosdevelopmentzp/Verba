@@ -134,6 +134,7 @@ override var canBecomeMain: Bool { false }
 | `⌘J` | result | cycle creativity (precise / balanced / creative) |
 | `⌘I` | result | open the extra-instruction editor |
 | `⌘P` | result | open the prompt viewer/editor overlay |
+| `⌘L` | result | speak the highlighted suggestion, or stop if it is already speaking |
 | `⌘C` | anywhere a source exists | copy the original source text, show HUD (handled via `FloatingPanel.copy(_:)`, not `onKeyPress`) |
 | `⎋` | anywhere | cancel and close |
 
@@ -159,6 +160,27 @@ current action.
 Because the sidebar changes the window's **width**, `PanelWindowController`
 derives its width from `PanelTheme.panelWidth(isSidebarExpanded:)` rather than a
 constant, and `resizeToFitContent()` compares width as well as height.
+
+## Speech
+
+`SpeechSynthesizing` (Domain, `@MainActor`) is spoken on-device through
+`AVSpeechSynthesizer` — no network, so the user's text never leaves the machine
+to be read aloud. `SpeechButton` appears on the source preview and on every
+suggestion row, and is a **toggle**: tapping the target that is already speaking
+stops it, and the icon switches to `stop.fill`. `⌘L` does the same for the
+highlighted suggestion.
+
+`PanelViewModel.speakingTarget` is the single source of truth; the adapter
+reports completion and cancellation through `onFinish` rather than being
+observed, so no `Data` type crosses into `Presentation`. Speech stops on every
+`run(...)` and on dismissal — the text being read must never outlive the text on
+screen.
+
+Language follows the content, not the interface: the source is spoken in its own
+language, and a translate result in the **target** language.
+`AVSpeechSynthesisVoice(language:)` returns nil when a voice is not installed
+(Ukrainian often is not), which correctly falls back to the system voice instead
+of refusing to speak.
 
 ## Chips and key capsules must never wrap
 

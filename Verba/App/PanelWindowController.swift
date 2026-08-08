@@ -40,6 +40,7 @@ final class PanelWindowController: NSObject {
         deliverResultUseCase: DeliverResultUseCase,
         explainFixesUseCase: ExplainFixesUseCase,
         promptPreview: PromptPreviewing,
+        speechSynthesizer: SpeechSynthesizing,
         preferences: PreferenceStoring,
         usageMeter: UsageMetering
     ) {
@@ -54,6 +55,7 @@ final class PanelWindowController: NSObject {
             deliverResultUseCase: deliverResultUseCase,
             explainFixesUseCase: explainFixesUseCase,
             promptPreview: promptPreview,
+            speechSynthesizer: speechSynthesizer,
             preferences: preferences,
             usageMeter: usageMeter,
             logger: logger
@@ -86,6 +88,7 @@ final class PanelWindowController: NSObject {
         panel.onCancel = { [weak viewModel] in viewModel?.handleEscape() }
         panel.delegate = self
 
+        viewModel.startSpeechObservation()
         observeContentChanges()
     }
 

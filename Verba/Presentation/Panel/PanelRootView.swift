@@ -93,6 +93,8 @@ struct PanelRootView: View {
                         onCopySelected: { viewModel.copySelectedOption() },
                         onCopyAlternative: { viewModel.copyAlternative(at: $0) },
                         onSelectOption: { viewModel.selectOption(at: $0) },
+                        speakingOption: viewModel.speakingOption,
+                        onToggleSpeech: { viewModel.toggleSpeech(for: .option($0)) },
                         onRerun: { viewModel.rerun() },
                         onExplain: { viewModel.explainFixes() },
                         onBack: { viewModel.goBackToPicking() },
@@ -200,7 +202,9 @@ struct PanelRootView: View {
             SourcePreviewView(
                 sourceText: source,
                 onCopyOriginal: { viewModel.copyOriginal() },
-                onEditOriginal: { viewModel.editCurrentSource() }
+                onEditOriginal: { viewModel.editCurrentSource() },
+                isSpeaking: viewModel.speakingTarget == .source,
+                onToggleSpeech: { viewModel.toggleSpeech(for: .source) }
             )
             HairlineDivider()
             content()

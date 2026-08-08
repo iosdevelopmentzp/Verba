@@ -298,6 +298,12 @@ know only `Domain`; `App` knows everybody.
   parameter the API explicitly named in its response body surfaced to the user
   as "something went wrong". `malformedRequest` is never retried and offers
   "Open Settings" as its recovery.
+- **`Data/Speech` imports `AVFoundation`, which is not in the `architecture.md`
+  import table.** Speech is an outside-world capability behind a `Domain`
+  protocol (`SpeechSynthesizing`), the same shape as pasteboard and Keychain
+  access, so it belongs in `Data`; the table simply predates the feature.
+  `AVSpeechSynthesizer` is entirely on-device, so this adds no network path and
+  no new TCC permission. `Scripts/check-layers.sh` does not flag it.
 - **`TextLanguage` doubles as detected-source and chosen-target, and now has
   five cases.** Widening it to `english/russian/ukrainian/spanish/other` was
   cheaper than introducing a parallel "target language" enum, because

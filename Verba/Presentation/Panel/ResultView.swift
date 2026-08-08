@@ -8,6 +8,8 @@ struct ResultView: View {
     let onCopySelected: () -> Void
     let onCopyAlternative: (Int) -> Void
     let onSelectOption: (Int) -> Void
+    let speakingOption: Int?
+    let onToggleSpeech: (Int) -> Void
     let onRerun: () -> Void
     let onExplain: () -> Void
     let onBack: () -> Void
@@ -94,6 +96,8 @@ struct ResultView: View {
                 if isSelected, canShowDiff(for: text) {
                     tappableCaption(isDiffShown ? "hide diff" : "show diff", action: onToggleDiff)
                 }
+
+                SpeechButton(isSpeaking: speakingOption == index) { onToggleSpeech(index) }
 
                 Spacer(minLength: 0)
 
@@ -185,6 +189,9 @@ struct ResultView: View {
         HStack(spacing: 14) {
             footerItem(key: "⏎", label: "copy", action: onCopySelected)
             footerItem(key: "⌘⏎", label: "copy and chain", action: nil)
+            footerItem(key: "⌘L", label: speakingOption == nil ? "listen" : "stop") {
+                onToggleSpeech(selectedIndex)
+            }
             footerItem(key: "⌘R", label: "rerun", action: onRerun)
 
             if canExplain {
