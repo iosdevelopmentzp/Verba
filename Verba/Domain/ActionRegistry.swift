@@ -35,8 +35,8 @@ enum ActionRegistry {
         ),
         TextAction(
             id: .translate,
-            titleEnglish: "Translate RU⇄EN",
-            titleRussian: "Перевести RU⇄EN",
+            titleEnglish: "Translate",
+            titleRussian: "Перевести",
             numberKey: 4,
             templateID: "translate",
             tier: .economy,

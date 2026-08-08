@@ -9,7 +9,15 @@ enum PanelTheme {
     static let contentPadding: CGFloat = 22
     static let sectionSpacing: CGFloat = 16
     static let cardCornerRadius: CGFloat = 12
+    static let grabberHeight: CGFloat = 14
+    static let promptEditorMinHeight: CGFloat = 560
     static let rowCornerRadius: CGFloat = 10
+    static let sidebarWidth: CGFloat = 208
+    static let sidebarRailWidth: CGFloat = 30
+
+    static func panelWidth(isSidebarExpanded: Bool) -> CGFloat {
+        width + (isSidebarExpanded ? sidebarWidth : sidebarRailWidth) + 1
+    }
 
     // MARK: Typography
 
@@ -19,6 +27,8 @@ enum PanelTheme {
     static let secondary = Font.system(size: 13, weight: .regular)
     static let caption = Font.system(size: 12, weight: .regular)
     static let key = Font.system(size: 12, weight: .semibold, design: .rounded)
+    static let sectionLabel = Font.system(size: 10, weight: .semibold).width(.expanded)
+    static let mono = Font.system(size: 12, weight: .regular, design: .monospaced)
 
     // MARK: Colors
 
@@ -32,6 +42,10 @@ enum PanelTheme {
     static let textTertiary = Color(white: 0.55)
     static let diffRemoved = Color(red: 0.75, green: 0.15, blue: 0.15)
     static let diffAdded = Color(red: 0.10, green: 0.5, blue: 0.20)
+    static let sidebarBackground = Color(white: 0.945)
+    static let locked = Color(white: 0.91)
+    static let editable = Color(red: 0.99, green: 0.98, blue: 0.93)
+    static let editableBorder = Color(red: 0.85, green: 0.72, blue: 0.25)
 
     // MARK: Shapes
 

@@ -11,7 +11,7 @@ collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .transient]
 isFloatingPanel = true
 hidesOnDeactivate = false
 becomesKeyOnlyIfNeeded = false
-isMovableByWindowBackground = false
+isMovableByWindowBackground = true
 override var canBecomeKey: Bool { true }
 override var canBecomeMain: Bool { false }
 ```
@@ -19,8 +19,16 @@ override var canBecomeMain: Bool { false }
 - Show with `orderFrontRegardless()` then `makeKey()`. **Never** call
   `NSApp.activate(...)` — the panel must not steal focus from the
   source app (Slack).
-- Position: horizontally centered on the screen containing the mouse,
-  vertically ~28% from the top. Width `PanelTheme.width`, height fits
+- Position: the panel is draggable by its background and remembers where the
+  user left it (`PreferenceStoring.panelOriginX`/`panelOriginY`, written from
+  `PanelWindowController.windowDidMove`). With no saved origin it falls back to
+  horizontally centered on the screen containing the mouse, vertically ~28%
+  from the top. Every programmatic `setFrame` goes through
+  `setFrameProgrammatically`, which raises a flag so `windowDidMove` cannot
+  overwrite the saved origin with a move the user did not make. A restored
+  frame is clamped inside `visibleFrame`, so an unplugged monitor or a grown
+  result cannot leave the panel off-screen. Settings has "Reset panel
+  position". Width `PanelTheme.width`, height fits
   content up to the mouse screen's available height (28% top inset,
   24pt bottom margin) via `PanelViewModel.maxContentHeight`, beyond
   which `PanelRootView`'s root `ScrollView` takes over — content never
@@ -112,5 +120,51 @@ override var canBecomeMain: Bool { false }
 | `⌘←` | parameterPicking, result, failed | back to `picking` with the same source, reselecting the action just being configured/run |
 | `⌘E` | result | open the Explain overlay (fixGrammar only, hidden/no-op elsewhere) |
 | `⌘D` | result | toggle the word-level diff for the highlighted suggestion (actions with `supportsDiff` only), persisted via `PreferenceStoring.isDiffVisible` |
+| `⇥` | result, failed | edit the source, then re-run the same action on it |
+| `⌘T` `⌘⇧T` | result (translate) | cycle target / source language |
+| `⌘J` | result | cycle creativity (precise / balanced / creative) |
+| `⌘I` | result | focus the extra-instruction field |
+| `⌘P` | result | open the prompt viewer/editor overlay |
 | `⌘C` | anywhere a source exists | copy the original source text, show HUD (handled via `FloatingPanel.copy(_:)`, not `onKeyPress`) |
 | `⎋` | anywhere | cancel and close |
+
+## Options sidebar
+
+`PanelSidebarView` is a permanent right-hand rail on `PanelRootView`, present in
+every state. Collapsed it is a `PanelTheme.sidebarRailWidth` strip with a
+vertical "OPTIONS" label; tapping anywhere on it expands to
+`PanelTheme.sidebarWidth`. The choice persists via
+`PreferenceStoring.isSidebarExpanded`. It holds Style (creativity), the
+translate language pair, the model tier, and the diff toggle — groups appear
+only when they apply to the current action. Changing any of them re-runs the
+current action.
+
+Because the sidebar changes the window's **width**, `PanelWindowController`
+derives its width from `PanelTheme.panelWidth(isSidebarExpanded:)` rather than a
+constant, and `resizeToFitContent()` compares width as well as height.
+
+## Result-screen controls
+
+`ResultControlsView` owns what sits below `ResultView`: the extra-instruction
+field and the "view and edit prompt" control. Everything else moved to the
+sidebar. The extra instruction is stored **per action**
+(`PanelViewModel.extraInstructions`, keyed by `TextAction.Kind`), so translate
+and rephrase keep separate one-off instructions; all of them clear when the
+panel closes. It takes the view model
+directly (the `ManualEntryView` precedent) so `ResultView`'s parameter list
+does not keep growing. Each control is both clickable and keyboard-reachable.
+
+Clicking a suggestion that is **not** highlighted moves the highlight to it;
+clicking the already-highlighted one copies it. That is the only way a mouse
+can reach an alternative's diff, which renders under the highlighted item only.
+
+`PanelWindowController.observeContentChanges()` tracks
+`PanelViewModel.trackLayoutInputs()`, not `state` alone — every observable
+property that can change the panel's height must be read there or the window
+will not resize when it changes.
+
+`PromptOverlayView` follows the `ExplanationOverlayView` contract (root
+`.overlay`, `Esc` dismisses the overlay before the panel, all other keys
+swallowed) but scrolls, because a system prompt does not fit. Only the
+action-specific instruction is editable — `Templates.preamble` carries the JSON
+contract the strict schema depends on and is shown read-only.

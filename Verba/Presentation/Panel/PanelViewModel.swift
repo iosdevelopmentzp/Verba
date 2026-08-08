@@ -1,9 +1,22 @@
 import Observation
 import SwiftUI
 
+struct PendingRun: Equatable {
+    let action: TextAction
+    let parameters: ActionParameters
+}
+
+struct PromptEditorState: Equatable {
+    let actionTitle: String
+    let preamble: String
+    let defaultBody: String
+    var body: String
+    var isPersistent: Bool
+}
+
 enum PanelState: Equatable {
     case capturing
-    case manualEntry(draft: String)
+    case manualEntry(draft: String, returnTo: PendingRun?)
     case picking(source: SourceText, selectedIndex: Int)
     case parameterPicking(source: SourceText, action: TextAction, selectedIndex: Int)
     case running(source: SourceText, action: TextAction)
@@ -27,6 +40,7 @@ final class PanelViewModel {
     private let processTextUseCase: ProcessTextUseCase
     private let deliverResultUseCase: DeliverResultUseCase
     private let explainFixesUseCase: ExplainFixesUseCase
+    private let promptPreview: PromptPreviewing
     private let preferences: PreferenceStoring
     private let usageMeter: UsageMetering
     private let logger: AppLogger
@@ -38,6 +52,12 @@ final class PanelViewModel {
     private(set) var usageSnapshot: UsageSnapshot?
     private(set) var explanation: ExplanationState?
     private(set) var isDiffShown: Bool
+    private(set) var isSidebarExpanded: Bool
+    private(set) var creativity: Creativity
+    private(set) var extraInstructions: [String: String] = [:]
+    private(set) var promptEditor: PromptEditorState?
+    private(set) var instructionFocusRequestID = 0
+    private(set) var rootFocusRequestID = 0
 
     var onRequestClose: (() -> Void)?
     var onOpenSettingsRequested: (() -> Void)?
@@ -51,8 +71,27 @@ final class PanelViewModel {
     }
 
     var manualDraft: String {
-        guard case .manualEntry(let draft) = state else { return "" }
+        guard case .manualEntry(let draft, _) = state else { return "" }
         return draft
+    }
+
+    var sourceLanguage: TextLanguage? {
+        currentParameters.sourceLanguage
+    }
+
+    var targetLanguage: TextLanguage {
+        if let targetLanguage = currentParameters.targetLanguage { return targetLanguage }
+        return ActionParameters.defaultTargetLanguage(for: currentParameters.sourceLanguage ?? currentSource?.language ?? .other)
+    }
+
+    func trackLayoutInputs() {
+        _ = state
+        _ = isDiffShown
+        _ = creativity
+        _ = isSidebarExpanded
+        _ = promptEditor
+        _ = explanation
+        _ = usageSnapshot
     }
 
     // MARK: Private properties
@@ -60,6 +99,7 @@ final class PanelViewModel {
     private var task: Task<Void, Never>?
     private var explainTask: Task<Void, Never>?
     private var currentParameters = ActionParameters()
+    private var sessionPromptOverrides: [String: String] = [:]
 
     // MARK: Static
 
@@ -76,6 +116,7 @@ final class PanelViewModel {
         processTextUseCase: ProcessTextUseCase,
         deliverResultUseCase: DeliverResultUseCase,
         explainFixesUseCase: ExplainFixesUseCase,
+        promptPreview: PromptPreviewing,
         preferences: PreferenceStoring,
         usageMeter: UsageMetering,
         logger: AppLogger
@@ -84,10 +125,13 @@ final class PanelViewModel {
         self.processTextUseCase = processTextUseCase
         self.deliverResultUseCase = deliverResultUseCase
         self.explainFixesUseCase = explainFixesUseCase
+        self.promptPreview = promptPreview
         self.preferences = preferences
         self.usageMeter = usageMeter
         self.logger = logger
         self.isDiffShown = preferences.isDiffVisible
+        self.creativity = preferences.lastCreativity
+        self.isSidebarExpanded = preferences.isSidebarExpanded
     }
 
     // MARK: Public methods
@@ -115,25 +159,45 @@ final class PanelViewModel {
         task?.cancel()
         task = nil
         isHUDVisible = false
+        extraInstructions = [:]
+        sessionPromptOverrides = [:]
+        promptEditor = nil
         dismissExplanation()
         state = .capturing
     }
 
     func updateManualDraft(_ text: String) {
-        guard case .manualEntry = state else { return }
-        state = .manualEntry(draft: text)
+        guard case .manualEntry(_, let returnTo) = state else { return }
+        state = .manualEntry(draft: text, returnTo: returnTo)
     }
 
     func acceptManualEntry() {
-        guard case .manualEntry(let draft) = state else { return }
+        guard case .manualEntry(let draft, let returnTo) = state else { return }
         guard let source = captureTextUseCase.make(content: draft, origin: .manual) else { return }
         logCaptured(source)
-        state = .picking(source: source, selectedIndex: 0)
+        rootFocusRequestID += 1
+
+        guard let returnTo else {
+            state = .picking(source: source, selectedIndex: 0)
+            return
+        }
+        run(action: returnTo.action, source: source, parameters: returnTo.parameters, bypassCache: false)
     }
 
     func editCurrentSource() {
-        guard case .picking(let source, _) = state else { return }
-        state = .manualEntry(draft: source.content)
+        switch state {
+        case .picking(let source, _):
+            state = .manualEntry(draft: source.content, returnTo: nil)
+        case .result(let source, let action, _, _), .failed(.some(let source), .some(let action), _):
+            task?.cancel()
+            dismissExplanation()
+            state = .manualEntry(
+                draft: source.content,
+                returnTo: PendingRun(action: action, parameters: currentParameters)
+            )
+        default:
+            break
+        }
     }
 
     func goBackToPicking() {
@@ -243,6 +307,144 @@ final class PanelViewModel {
         explanation = nil
     }
 
+    func extraInstruction(for action: TextAction) -> String {
+        extraInstructions[action.id.rawValue] ?? ""
+    }
+
+    func updateExtraInstruction(_ text: String, for action: TextAction) {
+        extraInstructions[action.id.rawValue] = text
+    }
+
+    func focusExtraInstruction() {
+        instructionFocusRequestID += 1
+    }
+
+    func applyExtraInstruction() {
+        rerunCurrentAction()
+    }
+
+    func setCreativity(_ value: Creativity) {
+        guard value != creativity else { return }
+        creativity = value
+        preferences.lastCreativity = value
+        rerunCurrentAction()
+    }
+
+    func cycleCreativity() {
+        let all = Creativity.allCases
+        guard let index = all.firstIndex(of: creativity) else { return }
+        setCreativity(all[(index + 1) % all.count])
+    }
+
+    func setSourceLanguage(_ value: TextLanguage?) {
+        guard value != currentParameters.sourceLanguage else { return }
+        currentParameters.sourceLanguage = value
+        currentParameters.targetLanguage = nil
+        preferences.lastSourceLanguage = value
+        preferences.lastTargetLanguage = nil
+        rerunCurrentAction()
+    }
+
+    func setTargetLanguage(_ value: TextLanguage) {
+        guard value != currentParameters.targetLanguage else { return }
+        currentParameters.targetLanguage = value
+        preferences.lastTargetLanguage = value
+        rerunCurrentAction()
+    }
+
+    func cycleSourceLanguage() {
+        let all: [TextLanguage?] = [nil] + TextLanguage.selectable.map { Optional($0) }
+        let index = all.firstIndex(of: currentParameters.sourceLanguage) ?? 0
+        setSourceLanguage(all[(index + 1) % all.count])
+    }
+
+    func cycleTargetLanguage() {
+        let all = TextLanguage.selectable
+        let index = all.firstIndex(of: targetLanguage) ?? 0
+        setTargetLanguage(all[(index + 1) % all.count])
+    }
+
+    func openPromptEditor() {
+        guard let action = currentAction, let source = currentSource else { return }
+        let parameters = resolvedParameters(currentParameters, action: action, source: source)
+        let defaultBody = promptPreview.defaultSystemPromptBody(
+            for: action,
+            parameters: parameters,
+            language: source.language
+        )
+        promptEditor = PromptEditorState(
+            actionTitle: action.titleEnglish,
+            preamble: promptPreview.preamble,
+            defaultBody: defaultBody,
+            body: parameters.systemPromptOverride ?? defaultBody,
+            isPersistent: preferences.promptOverrides[overrideKey(for: action)] != nil
+        )
+    }
+
+    func dismissPromptEditor() {
+        promptEditor = nil
+        rootFocusRequestID += 1
+    }
+
+    func updatePromptBody(_ text: String) {
+        promptEditor?.body = text
+    }
+
+    func setPromptPersistent(_ isPersistent: Bool) {
+        promptEditor?.isPersistent = isPersistent
+    }
+
+    func resetPrompt() {
+        guard let action = currentAction, var editor = promptEditor else { return }
+        sessionPromptOverrides[overrideKey(for: action)] = nil
+        preferences.promptOverrides[overrideKey(for: action)] = nil
+        editor.body = editor.defaultBody
+        editor.isPersistent = false
+        promptEditor = editor
+    }
+
+    func applyPromptEditor() {
+        guard let action = currentAction, let editor = promptEditor else { return }
+        let trimmed = editor.body.trimmingCharacters(in: .whitespacesAndNewlines)
+        let override = trimmed == editor.defaultBody.trimmingCharacters(in: .whitespacesAndNewlines) ? nil : trimmed
+
+        let key = overrideKey(for: action)
+        sessionPromptOverrides[key] = editor.isPersistent ? nil : override
+        preferences.promptOverrides[key] = editor.isPersistent ? override : nil
+
+        promptEditor = nil
+        rerunCurrentAction()
+    }
+
+    func selectOption(at index: Int) {
+        guard case .result(let source, let action, let result, _) = state,
+              (0...result.alternatives.count).contains(index) else { return }
+        state = .result(source: source, action: action, result: result, selectedIndex: index)
+    }
+
+    func toggleSidebar() {
+        isSidebarExpanded.toggle()
+        preferences.isSidebarExpanded = isSidebarExpanded
+    }
+
+    var economyMode: Bool {
+        preferences.economyMode
+    }
+
+    func setEconomyMode(_ isOn: Bool) {
+        guard isOn != preferences.economyMode else { return }
+        preferences.economyMode = isOn
+        rerunCurrentAction()
+    }
+
+    var canConfigureLanguages: Bool {
+        currentAction?.id == .translate
+    }
+
+    var canToggleDiff: Bool {
+        currentAction?.supportsDiff == true
+    }
+
     func toggleDiff() {
         isDiffShown.toggle()
         preferences.isDiffVisible = isDiffShown
@@ -256,17 +458,23 @@ final class PanelViewModel {
         onOpenSystemSettingsRequested?()
     }
 
+    func handleEscape() {
+        if promptEditor != nil {
+            dismissPromptEditor()
+        } else if explanation != nil {
+            dismissExplanation()
+        } else {
+            cancelAndClose()
+        }
+    }
+
     func handle(_ press: KeyPress) -> KeyPress.Result {
         if press.key == .escape {
-            if explanation != nil {
-                dismissExplanation()
-            } else {
-                cancelAndClose()
-            }
+            handleEscape()
             return .handled
         }
 
-        guard explanation == nil else { return .handled }
+        guard explanation == nil, promptEditor == nil else { return .handled }
 
         switch state {
         case .capturing, .running:
@@ -292,7 +500,7 @@ final class PanelViewModel {
         do {
             guard let source = try await captureTextUseCase.execute() else {
                 guard Task.isCancelled == false else { return }
-                state = .manualEntry(draft: "")
+                state = .manualEntry(draft: "", returnTo: nil)
                 return
             }
             guard Task.isCancelled == false else { return }
@@ -322,8 +530,66 @@ final class PanelViewModel {
         )
     }
 
+    private var currentSource: SourceText? {
+        switch state {
+        case .picking(let source, _),
+             .parameterPicking(let source, _, _),
+             .running(let source, _),
+             .result(let source, _, _, _):
+            return source
+        case .failed(let source, _, _):
+            return source
+        default:
+            return nil
+        }
+    }
+
+    private var currentAction: TextAction? {
+        switch state {
+        case .parameterPicking(_, let action, _), .running(_, let action), .result(_, let action, _, _):
+            return action
+        case .failed(_, .some(let action), _):
+            return action
+        default:
+            return nil
+        }
+    }
+
+    private func overrideKey(for action: TextAction) -> String {
+        "\(action.templateID).v\(promptPreview.promptVersion(for: action))"
+    }
+
+    private func resolvedParameters(
+        _ parameters: ActionParameters,
+        action: TextAction,
+        source: SourceText
+    ) -> ActionParameters {
+        var resolved = parameters
+        resolved.creativity = creativity
+        let instruction = extraInstruction(for: action)
+        resolved.extraInstruction = instruction.isEmpty ? nil : instruction
+        let overrideKey = overrideKey(for: action)
+        resolved.systemPromptOverride = sessionPromptOverrides[overrideKey]
+            ?? preferences.promptOverrides[overrideKey]
+
+        if action.id == .translate {
+            resolved.sourceLanguage = resolved.sourceLanguage ?? preferences.lastSourceLanguage
+            resolved.targetLanguage = resolved.targetLanguage
+                ?? preferences.lastTargetLanguage
+                ?? ActionParameters.defaultTargetLanguage(for: resolved.sourceLanguage ?? source.language)
+        }
+        return resolved
+    }
+
+    private func rerunCurrentAction() {
+        guard let action = currentAction, let source = currentSource else { return }
+        run(action: action, source: source, parameters: currentParameters, bypassCache: false)
+    }
+
     private func run(action: TextAction, source: SourceText, parameters: ActionParameters, bypassCache: Bool) {
         task?.cancel()
+        rootFocusRequestID += 1
+        let parameters = resolvedParameters(parameters, action: action, source: source)
         currentParameters = parameters
         state = .running(source: source, action: action)
 
@@ -545,6 +811,30 @@ final class PanelViewModel {
             toggleDiff()
             return .handled
         }
+        if press.modifiers.contains(.command), Self.isLetter(press, "j") {
+            cycleCreativity()
+            return .handled
+        }
+        if press.modifiers.contains(.command), Self.isLetter(press, "i") {
+            focusExtraInstruction()
+            return .handled
+        }
+        if press.modifiers.contains(.command), Self.isLetter(press, "p") {
+            openPromptEditor()
+            return .handled
+        }
+        if press.modifiers.contains(.command), Self.isLetter(press, "t"), action.id == .translate {
+            if press.modifiers.contains(.shift) {
+                cycleSourceLanguage()
+            } else {
+                cycleTargetLanguage()
+            }
+            return .handled
+        }
+        if press.key == .tab {
+            editCurrentSource()
+            return .handled
+        }
         if press.key == .leftArrow, press.modifiers.contains(.command) {
             goBackToPicking()
             return .handled
@@ -557,6 +847,10 @@ final class PanelViewModel {
     }
 
     private func handleFailed(_ press: KeyPress, source: SourceText?, action: TextAction?) -> KeyPress.Result {
+        if press.key == .tab, source != nil, action != nil {
+            editCurrentSource()
+            return .handled
+        }
         if press.modifiers.contains(.command), Self.isR(press) {
             rerun()
             return .handled
@@ -586,16 +880,20 @@ final class PanelViewModel {
         return nil
     }
 
+    private static func isLetter(_ press: KeyPress, _ letter: String) -> Bool {
+        press.characters.lowercased() == letter || press.key.character.lowercased() == letter
+    }
+
     private static func isR(_ press: KeyPress) -> Bool {
-        press.characters.lowercased() == "r" || press.key.character.lowercased() == "r"
+        isLetter(press, "r")
     }
 
     private static func isE(_ press: KeyPress) -> Bool {
-        press.characters.lowercased() == "e" || press.key.character.lowercased() == "e"
+        isLetter(press, "e")
     }
 
     private static func isD(_ press: KeyPress) -> Bool {
-        press.characters.lowercased() == "d" || press.key.character.lowercased() == "d"
+        isLetter(press, "d")
     }
 
     private func defaultParameterIndex(for action: TextAction) -> Int {

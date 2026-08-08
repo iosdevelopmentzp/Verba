@@ -16,6 +16,7 @@ enum AppError: Error, Equatable, Sendable {
     case unauthorized
     case providerUnavailable(status: Int)
     case malformedResponse
+    case malformedRequest(status: Int)
     case pasteboardAccessDenied
     case cancelled
     case unknown
@@ -29,6 +30,7 @@ enum AppError: Error, Equatable, Sendable {
 | `.notConnectedToInternet`, `.networkConnectionLost`, `.cannotFindHost`, `.dataNotAllowed` | `.offline` |
 | `URLError.timedOut` or the 20s deadline | `.timedOut` |
 | `CancellationError`, `URLError.cancelled` | `.cancelled` |
+| HTTP 400, 404, 422 | `.malformedRequest(status:)` |
 | HTTP 401, 403 | `.unauthorized` |
 | HTTP 429 | `.rateLimited(retryAfter:)` from `Retry-After` |
 | HTTP 500–599 | `.providerUnavailable(status:)` |

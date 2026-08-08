@@ -37,6 +37,8 @@ struct ErrorView: View {
             return Recovery(title: "Open Settings", action: onOpenSettings)
         case .pasteboardAccessDenied:
             return Recovery(title: "Open System Settings", action: onOpenSystemSettings)
+        case .malformedRequest:
+            return Recovery(title: "Open Settings", action: onOpenSettings)
         case .offline, .timedOut, .rateLimited, .providerUnavailable, .malformedResponse, .unknown:
             return Recovery(title: "Retry", action: onRetry)
         case .emptyInput, .inputTooLong, .cancelled:

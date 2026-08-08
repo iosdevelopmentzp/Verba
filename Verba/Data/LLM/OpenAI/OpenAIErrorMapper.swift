@@ -20,6 +20,8 @@ enum OpenAIErrorMapper {
 
     static func map(httpStatus: Int, retryAfter: TimeInterval?) -> AppError {
         switch httpStatus {
+        case 400, 404, 422:
+            return .malformedRequest(status: httpStatus)
         case 401, 403:
             return .unauthorized
         case 429:

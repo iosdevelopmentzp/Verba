@@ -7,6 +7,7 @@ struct ResultView: View {
     let selectedIndex: Int
     let onCopyPrimary: () -> Void
     let onCopyAlternative: (Int) -> Void
+    let onSelectOption: (Int) -> Void
     let onRerun: () -> Void
     let onExplain: () -> Void
     let onBack: () -> Void
@@ -82,7 +83,7 @@ struct ResultView: View {
             .background(isPrimarySelected ? PanelTheme.selection : PanelTheme.surface, in: PanelTheme.cardShape)
             .overlay { PanelTheme.cardShape.strokeBorder(PanelTheme.hairline, lineWidth: 1) }
             .contentShape(Rectangle())
-            .onTapGesture { onCopyPrimary() }
+            .onTapGesture { isPrimarySelected ? onCopyPrimary() : onSelectOption(0) }
     }
 
     private var tierLabel: String {
@@ -125,7 +126,7 @@ struct ResultView: View {
                 .padding(.horizontal, 8)
                 .background(isSelected ? PanelTheme.selection : Color.clear, in: PanelTheme.rowShape)
                 .contentShape(Rectangle())
-                .onTapGesture { onCopyAlternative(index) }
+                .onTapGesture { isSelected ? onCopyAlternative(index) : onSelectOption(index + 1) }
             }
         }
     }

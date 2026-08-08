@@ -10,6 +10,7 @@ enum AppError: Error, Equatable, Sendable {
     case unauthorized
     case providerUnavailable(status: Int)
     case malformedResponse
+    case malformedRequest(status: Int)
     case pasteboardAccessDenied
     case cancelled
     case unknown

@@ -19,6 +19,8 @@ enum ErrorPresentation {
             return "The API key was rejected."
         case .providerUnavailable(let status):
             return "OpenAI is having trouble (\(status))."
+        case .malformedRequest:
+            return "Verba sent a request this model rejected. Try another model in Settings."
         case .malformedResponse:
             return "Couldn't read the model's response."
         case .pasteboardAccessDenied:

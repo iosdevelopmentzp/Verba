@@ -17,6 +17,8 @@ struct NLLanguageDetector: LanguageDetecting {
         switch recognizer.dominantLanguage {
         case .russian: return .russian
         case .english: return .english
+        case .ukrainian: return .ukrainian
+        case .spanish: return .spanish
         default: return .other
         }
     }

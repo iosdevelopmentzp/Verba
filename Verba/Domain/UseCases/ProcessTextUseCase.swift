@@ -11,6 +11,7 @@ struct ProcessTextUseCase: Sendable {
     // MARK: Static
 
     private static let cacheKeyLength = 32
+    private static let fieldDigestLength = 16
 
     // MARK: Init
 
@@ -81,10 +82,22 @@ struct ProcessTextUseCase: Sendable {
         let parameterDescription = [
             parameters.tone?.rawValue ?? "",
             parameters.level?.rawValue ?? "",
-            parameters.targetLanguage?.rawValue ?? ""
+            parameters.sourceLanguage?.rawValue ?? "",
+            parameters.targetLanguage?.rawValue ?? "",
+            parameters.creativity.rawValue
         ].joined(separator: ",")
 
-        let raw = "\(actionID)|\(modelID)|\(promptVersion)|\(parameterDescription)|\(text)"
+        let instruction = Self.fieldDigest(parameters.extraInstruction)
+        let override = Self.fieldDigest(parameters.systemPromptOverride)
+        let raw = """
+        \(actionID)|\(modelID)|\(promptVersion)|\(parameterDescription)\
+        |\(instruction)|\(override)|\(text)
+        """
         return CacheKeyHasher.hexDigest(raw, truncatedTo: cacheKeyLength)
+    }
+
+    private static func fieldDigest(_ value: String?) -> String {
+        guard let value, value.isEmpty == false else { return "" }
+        return CacheKeyHasher.hexDigest(value, truncatedTo: fieldDigestLength)
     }
 }

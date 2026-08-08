@@ -43,6 +43,13 @@ struct VerbaApp: App {
         }
         .windowResizability(.contentSize)
         .defaultLaunchBehavior(appDelegate.container?.needsOnboarding == true ? .presented : .suppressed)
+        .commands {
+            // The main menu resolves key equivalents before the panel sees them,
+            // so anything the panel binds must not also be a menu item.
+            CommandGroup(replacing: .printItem) {}
+            CommandGroup(replacing: .textFormatting) {}
+            CommandGroup(replacing: .textEditing) {}
+        }
     }
 }
 

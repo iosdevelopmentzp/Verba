@@ -5,12 +5,37 @@
 `PromptTemplate` = `id`, `version` (integer, bump whenever the prompt
 text changes — it is part of the cache key), `systemPrompt(parameters:
 language:) -> String`. Templates live in `Data/Prompt/Templates.swift`.
-The user's text goes in `userContent` only; it is never interpolated
-into the system prompt string.
+The text being edited goes in `userContent` only; it is never
+interpolated into the system prompt string. An explicit user
+*instruction* is the one exception — see "Extra instruction" below.
+
+## Extra instruction and prompt overrides
+
+`ActionParameters.extraInstruction` is a one-off instruction the user types on
+the result screen. `PromptBuilder` appends it to the **system** prompt in a
+fenced block that outranks the template body, because an instruction placed
+next to the subject text gets edited rather than obeyed.
+`ActionParameters.systemPromptOverride` replaces the template body only; the
+preamble is always kept. Both are free text, so both are appended to the cache
+key as their own `|`-separated fields rather than inside the comma-joined
+parameter group.
+
+## Creativity
+
+The Responses API takes no `temperature` for GPT-5-family reasoning models.
+`Creativity` maps to `reasoning.effort` plus `text.verbosity` plus a prompt
+clause. There is **no single effort value every model accepts**: `gpt-5.6-*`
+rejects `"minimal"`, and `gpt-5-nano`/`gpt-5-mini` reject `"none"`. Each
+`ModelCatalogEntry` therefore declares its own `lowestReasoningEffort`, which
+`OpenAIRequestBuilder` uses for `precise` and `balanced`; `creative` raises it
+to `"low"` and verbosity to `"medium"`. An unknown model id falls back to
+`ModelCatalog.universalReasoningEffort` (`"low"`), which every model accepts.
 
 ## Cache key
 
-`SHA256(actionID | modelID | promptVersion | parameters | text)`, hex,
+`SHA256(actionID | modelID | promptVersion | parameters | extraInstruction |
+systemPromptOverride | text)`, where `parameters` is
+`tone,level,sourceLanguage,targetLanguage,creativity`, hex,
 truncated to 32 chars. Changing a template's `version`, the action id,
 the model id, or any parameter must change the key — that is the whole
 point of the version field. A cache hit skips the network call entirely.
@@ -41,7 +66,7 @@ result, not the stale one.
 ## Retries
 
 Retry only `.rateLimited` and `.providerUnavailable`, exactly once.
-Never retry `.unauthorized`, `.malformedResponse`, `.inputTooLong`,
+Never retry `.unauthorized`, `.malformedRequest`, `.malformedResponse`, `.inputTooLong`,
 `.offline`, or `.cancelled`. A `.malformedResponse` gets one extra
 allowance at the `LLMTextProcessor` level: re-ask once with a stricter
 instruction appended, then surface the error if it fails again.

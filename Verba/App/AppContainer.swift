@@ -59,6 +59,7 @@ final class AppContainer {
             processTextUseCase: processTextUseCase,
             deliverResultUseCase: deliverResultUseCase,
             explainFixesUseCase: explainFixesUseCase,
+            promptPreview: PromptPreview(promptBuilder: promptBuilder),
             preferences: preferences,
             usageMeter: usageMeter
         )

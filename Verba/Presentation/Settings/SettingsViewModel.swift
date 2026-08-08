@@ -47,6 +47,14 @@ final class SettingsViewModel {
         set { preferences.monthlyBudgetUSD = newValue }
     }
 
+    var hasSavedPanelPosition: Bool {
+        preferences.panelOriginX != nil || preferences.panelTopY != nil
+    }
+
+    var hasPromptOverrides: Bool {
+        preferences.promptOverrides.isEmpty == false
+    }
+
     // MARK: Private properties
 
     private var testTask: Task<Void, Never>?
@@ -88,6 +96,15 @@ final class SettingsViewModel {
             guard Task.isCancelled == false else { return }
             keyTestState = error.map(KeyTestState.failure) ?? .success
         }
+    }
+
+    func resetPanelPosition() {
+        preferences.panelOriginX = nil
+        preferences.panelTopY = nil
+    }
+
+    func resetPromptOverrides() {
+        preferences.promptOverrides = [:]
     }
 
     func cancelTesting() {

@@ -35,6 +35,8 @@ enum ExplainFixesPrompt {
         switch language {
         case .russian: return "Russian"
         case .english: return "English"
+        case .ukrainian: return "Ukrainian"
+        case .spanish: return "Spanish"
         case .other: return "the same language as the input text"
         }
     }
