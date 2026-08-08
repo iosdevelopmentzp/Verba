@@ -87,6 +87,10 @@ final class PanelViewModel {
         currentParameters.sourceLanguage
     }
 
+    var detectedLanguage: TextLanguage? {
+        currentSource?.language
+    }
+
     var targetLanguage: TextLanguage {
         if let targetLanguage = currentParameters.targetLanguage { return targetLanguage }
         return ActionParameters.defaultTargetLanguage(for: currentParameters.sourceLanguage ?? currentSource?.language ?? .other)

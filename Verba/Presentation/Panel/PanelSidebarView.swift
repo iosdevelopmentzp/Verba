@@ -192,7 +192,7 @@ extension TextLanguage {
         switch self {
         case .english: return "EN"
         case .russian: return "RU"
-        case .ukrainian: return "UK"
+        case .ukrainian: return "UA"
         case .spanish: return "ES"
         case .other: return "—"
         }

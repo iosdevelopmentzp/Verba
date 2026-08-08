@@ -74,6 +74,8 @@ struct ChipView: View {
     var body: some View {
         Text(label)
             .font(PanelTheme.caption)
+            .lineLimit(1)
+            .fixedSize()
             .foregroundStyle(isSelected ? PanelTheme.selectionText : PanelTheme.textSecondary)
             .padding(.horizontal, 9)
             .padding(.vertical, 4)

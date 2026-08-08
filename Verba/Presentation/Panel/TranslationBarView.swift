@@ -4,52 +4,69 @@ struct TranslationBarView: View {
     let viewModel: PanelViewModel
 
     var body: some View {
-        HStack(spacing: 8) {
-            label("From", key: "⌘⇧T")
+        VStack(alignment: .leading, spacing: 6) {
+            row(title: "From", key: "⌘⇧T") {
+                ChipView(label: "Auto", isSelected: viewModel.sourceLanguage == nil)
+                    .onTapGesture { viewModel.setSourceLanguage(nil) }
 
-            ChipView(label: "Auto", isSelected: viewModel.sourceLanguage == nil)
-                .onTapGesture { viewModel.setSourceLanguage(nil) }
+                ForEach(TextLanguage.selectable, id: \.self) { language in
+                    ChipView(label: language.shortCode, isSelected: viewModel.sourceLanguage == language)
+                        .onTapGesture { viewModel.setSourceLanguage(language) }
+                }
 
-            ForEach(TextLanguage.selectable, id: \.self) { language in
-                ChipView(label: language.shortCode, isSelected: viewModel.sourceLanguage == language)
-                    .onTapGesture { viewModel.setSourceLanguage(language) }
+                Spacer(minLength: 0)
+
+                if viewModel.sourceLanguage == nil {
+                    Text(detectedSummary)
+                        .font(PanelTheme.caption)
+                        .lineLimit(1)
+                        .foregroundStyle(PanelTheme.textTertiary)
+                }
             }
 
-            Image(systemName: "arrow.right")
-                .font(.system(size: 10, weight: .semibold))
-                .foregroundStyle(PanelTheme.textTertiary)
-                .padding(.horizontal, 2)
+            row(title: "Into", key: "⌘T") {
+                ForEach(TextLanguage.selectable, id: \.self) { language in
+                    ChipView(label: language.shortCode, isSelected: viewModel.targetLanguage == language)
+                        .onTapGesture { viewModel.setTargetLanguage(language) }
+                }
 
-            label("Into", key: "⌘T")
+                Spacer(minLength: 0)
 
-            ForEach(TextLanguage.selectable, id: \.self) { language in
-                ChipView(label: language.shortCode, isSelected: viewModel.targetLanguage == language)
-                    .onTapGesture { viewModel.setTargetLanguage(language) }
+                Text(viewModel.targetLanguage.displayName)
+                    .font(PanelTheme.caption)
+                    .lineLimit(1)
+                    .foregroundStyle(PanelTheme.textTertiary)
             }
-
-            Spacer(minLength: 0)
-
-            Text(summary)
-                .font(PanelTheme.caption)
-                .foregroundStyle(PanelTheme.textTertiary)
         }
         .padding(.horizontal, 10)
-        .padding(.vertical, 7)
+        .padding(.vertical, 8)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(PanelTheme.surface, in: PanelTheme.rowShape)
         .overlay { PanelTheme.rowShape.strokeBorder(PanelTheme.hairline, lineWidth: 1) }
     }
 
-    private func label(_ text: String, key: String) -> some View {
-        HStack(spacing: 5) {
-            Text(text.uppercased())
+    private func row<Content: View>(
+        title: String,
+        key: String,
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        HStack(spacing: 6) {
+            Text(title.uppercased())
                 .font(PanelTheme.sectionLabel)
+                .lineLimit(1)
                 .foregroundStyle(PanelTheme.textTertiary)
+                .frame(width: 34, alignment: .leading)
+
             KeyCapsuleView(label: key, isHighlighted: false)
+
+            content()
         }
     }
 
-    private var summary: String {
-        "\(viewModel.sourceLanguage?.displayName ?? "Detected") → \(viewModel.targetLanguage.displayName)"
+    private var detectedSummary: String {
+        guard let detected = viewModel.detectedLanguage, detected != .other else {
+            return "Detected by the model"
+        }
+        return "Detected: \(detected.displayName)"
     }
 }

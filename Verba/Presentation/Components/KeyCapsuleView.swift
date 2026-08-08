@@ -8,6 +8,8 @@ struct KeyCapsuleView: View {
         Text(label)
             .font(PanelTheme.key)
             .monospacedDigit()
+            .lineLimit(1)
+            .fixedSize()
             .foregroundStyle(isHighlighted ? PanelTheme.selectionText : PanelTheme.textSecondary)
             .frame(minWidth: 22)
             .padding(.horizontal, 7)
