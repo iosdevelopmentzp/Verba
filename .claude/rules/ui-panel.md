@@ -184,7 +184,13 @@ enhanced or premium voice is installed. `SystemSpeechSynthesizer.voice(for:)`
 scans `speechVoices()` and ranks by quality first, exact-locale match second.
 Settings reports the best installed quality per language and points at the free
 Enhanced/Premium downloads when only compact voices are present — that download,
-not the code, is what actually fixes perceived speech quality.
+not the code, is what actually fixes perceived speech quality. The pane is
+**Accessibility › Read & Speak** on macOS 26; "Spoken Content" is the old name and
+survives only as a search keyword (confirmed in
+`AccessibilitySettingsExtension.appex`'s `UniversalAccess.searchTerms`, whose
+entry titled "Read & Speak" indexes both). Voices are shared system assets, so a
+download started from any TTS picker is visible to
+`AVSpeechSynthesisVoice.speechVoices()`.
 
 ## Chips and key capsules must never wrap
 

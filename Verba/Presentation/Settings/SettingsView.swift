@@ -20,7 +20,7 @@ struct SettingsView: View {
                         .foregroundStyle(.secondary)
 
                     Button("Open Accessibility settings") { viewModel.openVoiceDownloads() }
-                    Text("Spoken Content › System Voice › Manage Voices")
+                    Text("Read & Speak › System Voice — voices with a download badge are the Enhanced and Premium ones.")
                         .font(.caption)
                         .foregroundStyle(.tertiary)
                 }
