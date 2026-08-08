@@ -23,6 +23,11 @@ enum Templates {
         """
     }
 
+    static let singleOptionSection = """
+    Return exactly one result and leave "alternatives" empty. The input is long, \
+    so extra phrasings are not worth the cost.
+    """
+
     static func creativitySection(_ creativity: Creativity) -> String? {
         switch creativity {
         case .precise:
@@ -47,7 +52,8 @@ enum Templates {
             ChangeToneTemplate(),
             TranslateTemplate(),
             HumanizeTemplate(),
-            ShortenTemplate()
+            ShortenTemplate(),
+            PoliteTemplate()
         ]
         return Dictionary(uniqueKeysWithValues: templates.map { ($0.id, $0) })
     }()
@@ -173,6 +179,25 @@ private struct ShortenTemplate: PromptTemplate {
         link, and instruction the original had — shorten wording, never meaning. primary is the \
         shortest version that still reads naturally; alternatives may offer one or two lengths \
         in between the original and primary. Notes may say roughly how much shorter it got.
+        """
+    }
+}
+
+private struct PoliteTemplate: PromptTemplate {
+    let id = "polite"
+    let version = 1
+
+    func systemPrompt(parameters: ActionParameters, language: TextLanguage) -> String {
+        """
+        Make the message more polite without padding it out. Soften demands into \
+        requests, add the courtesy the message is missing, and remove anything that \
+        reads as blunt, impatient, or accusatory. Keep every fact, number, name, link, \
+        deadline, and request intact — politeness must not blur what is being asked or \
+        make it optional. Do not add greetings or sign-offs that were not there, do not \
+        pile up hedges like "just", "maybe", "if possible", and do not make it longer \
+        than it needs to be. primary is the most natural polite version; alternatives \
+        may offer one warmer and one more neutral-formal variant. Notes name what was \
+        softened.
         """
     }
 }

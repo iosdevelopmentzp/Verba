@@ -49,6 +49,17 @@ Bypassing only skips the *read*; the fresh result still overwrites the
 cache entry afterward, so a later genuine cache hit gets the newest
 result, not the stale one.
 
+## Alternatives budget
+
+A translation is roughly as long as its input, so alternatives double the billed
+output for something the user rarely reads on a long message.
+`OutputBudget.allowsAlternatives(action:characterCount:)` (Domain) returns false
+for `translate` above `InputLimits.softWarn`, which both appends
+`Templates.singleOptionSection` and drops the response schema's
+`alternatives.maxItems` to `0` — verified accepted under `strict: true`. The
+decision derives from the action and the text, both already in the cache key, so
+it needs no key field of its own.
+
 ## Cost caps
 
 - `ModelCatalog` is the single source of truth for model ids and

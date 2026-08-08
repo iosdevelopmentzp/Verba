@@ -7,8 +7,10 @@ description: Add a new action (like "Fix grammar" or "Humanize") to Verba's pane
 
 1. **Registry entry.** Add a `TextAction` to `ActionRegistry.all` in
    `Verba/Domain/ActionRegistry.swift`: pick the next free `numberKey`
-   (1–5 are taken; extending past 5 needs a keyboard-map decision, see
-   `.claude/rules/ui-panel.md`), a `templateID`, a `tier`, and whether it
+   (1–7 are taken). `PanelViewModel.numberKeyRange` derives from
+   `ActionRegistry.all.count`, so the digit keys extend automatically — but
+   `shiftedDigitSymbols` must gain the shifted character for the new digit, and
+   the keyboard map in `.claude/rules/ui-panel.md` must be updated, a `templateID`, a `tier`, and whether it
    `needsParameters`.
 2. **Template + version.** Add a matching entry to
    `Verba/Data/Prompt/Templates.swift` with `id`, a fresh `version`

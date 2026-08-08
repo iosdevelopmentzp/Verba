@@ -10,12 +10,22 @@ struct PromptBuilder: Sendable {
 
     func build(action: TextAction, parameters: ActionParameters, language: TextLanguage, text: String) -> Prompt {
         Prompt(
-            systemPrompt: fullSystemPrompt(for: action, parameters: parameters, language: language),
+            systemPrompt: fullSystemPrompt(
+                for: action,
+                parameters: parameters,
+                language: language,
+                characterCount: text.count
+            ),
             userContent: text
         )
     }
 
-    func fullSystemPrompt(for action: TextAction, parameters: ActionParameters, language: TextLanguage) -> String {
+    func fullSystemPrompt(
+        for action: TextAction,
+        parameters: ActionParameters,
+        language: TextLanguage,
+        characterCount: Int
+    ) -> String {
         var sections = [Templates.preamble]
 
         let body = parameters.systemPromptOverride ?? defaultSystemPromptBody(
@@ -29,6 +39,10 @@ struct PromptBuilder: Sendable {
 
         if let creativity = Templates.creativitySection(parameters.creativity) {
             sections.append(creativity)
+        }
+
+        if OutputBudget.allowsAlternatives(action: action, characterCount: characterCount) == false {
+            sections.append(Templates.singleOptionSection)
         }
 
         let instruction = parameters.extraInstruction?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""

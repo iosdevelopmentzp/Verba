@@ -118,7 +118,7 @@ override var canBecomeMain: Bool { false }
 | `↑` `↓` | picking | move selection |
 | `⏎` | picking | run the selected action |
 | `⇥` | picking | edit the captured text — goes to `manualEntry` prefilled with it, origin becomes `.manual` on accept |
-| `1`–`6` | picking, result, failed | run that action directly; `3` / `5` (change tone / humanize) always open the parameter picker instead, preselected to the last tone/level chosen |
+| `1`–`7` | picking, result, failed | run that action directly; `3` / `5` (change tone / humanize) always open the parameter picker instead, preselected to the last tone/level chosen |
 | `↑` `↓` | result | move the highlight across `primary`, its alternatives, and the extra-instruction row |
 | `⏎` | result | copy the highlighted option, show HUD — or open the extra-instruction editor when that row is highlighted |
 | `⌘⏎` | result | copy the highlighted option, then go back to `picking` with *that highlighted option* (not the original capture) as the new source, origin `.chained` |

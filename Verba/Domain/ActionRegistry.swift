@@ -59,6 +59,16 @@ enum ActionRegistry {
             needsParameters: false,
             supportsExplanation: false,
             supportsDiff: true
+        ),
+        TextAction(
+            id: .polite,
+            titleEnglish: "Make more polite",
+            numberKey: 7,
+            templateID: "polite",
+            tier: .standard,
+            needsParameters: false,
+            supportsExplanation: false,
+            supportsDiff: true
         )
     ]
 }

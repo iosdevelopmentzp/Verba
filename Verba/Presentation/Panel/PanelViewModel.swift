@@ -113,8 +113,9 @@ final class PanelViewModel {
     // MARK: Static
 
     private static let hudDisplayDuration: Duration = .milliseconds(650)
+    private static let numberKeyRange = 1...ActionRegistry.all.count
     private static let shiftedDigitSymbols: [Character: Int] = [
-        "!": 1, "@": 2, "#": 3, "$": 4, "%": 5,
+        "!": 1, "@": 2, "#": 3, "$": 4, "%": 5, "^": 6, "&": 7,
         "£": 3, "§": 3, "№": 3
     ]
 
@@ -927,13 +928,13 @@ final class PanelViewModel {
     }
 
     private static func numberKey(for press: KeyPress) -> Int? {
-        if let value = press.characters.first?.wholeNumberValue, (1...6).contains(value) {
+        if let value = press.characters.first?.wholeNumberValue, Self.numberKeyRange.contains(value) {
             return value
         }
         if let symbol = press.characters.first, let value = shiftedDigitSymbols[symbol] {
             return value
         }
-        if let value = press.key.character.wholeNumberValue, (1...6).contains(value) {
+        if let value = press.key.character.wholeNumberValue, Self.numberKeyRange.contains(value) {
             return value
         }
         return nil
