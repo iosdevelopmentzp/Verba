@@ -86,7 +86,7 @@ struct PanelRootView: View {
                         action: action,
                         result: result,
                         selectedIndex: selectedIndex,
-                        onCopyPrimary: { viewModel.copyPrimary() },
+                        onCopySelected: { viewModel.copySelectedOption() },
                         onCopyAlternative: { viewModel.copyAlternative(at: $0) },
                         onSelectOption: { viewModel.selectOption(at: $0) },
                         onRerun: { viewModel.rerun() },

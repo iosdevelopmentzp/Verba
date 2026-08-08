@@ -154,9 +154,19 @@ panel closes. It takes the view model
 directly (the `ManualEntryView` precedent) so `ResultView`'s parameter list
 does not keep growing. Each control is both clickable and keyboard-reachable.
 
+`ResultView` renders the primary and its alternatives as **one uniform list**
+of suggestion rows, not a hero card plus a separate section — they are the same
+kind of thing and the keyboard already treats them as one wrapping selection.
+
+Selection is a soft accent tint plus a 3pt accent bar on the leading edge, never
+a solid accent fill. A filled row forces white body text, which makes the
+word-level diff rendered inside it unreadable and inverts the intended
+hierarchy — the same failure the visual pass hit with `.regularMaterial`.
+
 Clicking a suggestion that is **not** highlighted moves the highlight to it;
-clicking the already-highlighted one copies it. That is the only way a mouse
-can reach an alternative's diff, which renders under the highlighted item only.
+clicking the already-highlighted one copies it. Each row states which it will
+do. That is also the only way a mouse can reach an alternative's diff, which
+renders under the highlighted item only.
 
 `PanelWindowController.observeContentChanges()` tracks
 `PanelViewModel.trackLayoutInputs()`, not `state` alone — every observable

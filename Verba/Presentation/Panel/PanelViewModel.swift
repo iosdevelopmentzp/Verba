@@ -246,9 +246,9 @@ final class PanelViewModel {
         }
     }
 
-    func copyPrimary() {
-        guard case .result(_, _, let result, _) = state else { return }
-        copyToPasteboard(result.primary)
+    func copySelectedOption() {
+        guard case .result(_, _, let result, let selectedIndex) = state else { return }
+        copySelected(at: selectedIndex, result: result)
     }
 
     func copyAlternative(at index: Int) {

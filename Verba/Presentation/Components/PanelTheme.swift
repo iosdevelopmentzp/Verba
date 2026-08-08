@@ -46,6 +46,8 @@ enum PanelTheme {
     static let locked = Color(white: 0.91)
     static let editable = Color(red: 0.99, green: 0.98, blue: 0.93)
     static let editableBorder = Color(red: 0.85, green: 0.72, blue: 0.25)
+    static let selectionSoft = Color.accentColor.opacity(0.10)
+    static let selectionBorder = Color.accentColor.opacity(0.40)
 
     // MARK: Shapes
 

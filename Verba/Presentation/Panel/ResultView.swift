@@ -5,7 +5,7 @@ struct ResultView: View {
     let action: TextAction
     let result: ActionResult
     let selectedIndex: Int
-    let onCopyPrimary: () -> Void
+    let onCopySelected: () -> Void
     let onCopyAlternative: (Int) -> Void
     let onSelectOption: (Int) -> Void
     let onRerun: () -> Void
@@ -16,30 +16,14 @@ struct ResultView: View {
 
     // MARK: Static
 
-    private static let primaryLineLimit = 14
-    private static let alternativeLineLimit = 4
+    private static let unselectedLineLimit = 6
 
     // MARK: Body
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             header
-
-            VStack(alignment: .leading, spacing: 4) {
-                primaryCard
-                characterCountLabel(result.primary, color: PanelTheme.textTertiary)
-
-                if isPrimarySelected, canShowDiff(for: result.primary) {
-                    diffToggle(isHighlighted: false)
-                    if isDiffShown {
-                        diffSection(for: result.primary)
-                    }
-                }
-            }
-
-            if result.alternatives.isEmpty == false {
-                alternativesSection
-            }
+            suggestions
 
             if result.notes.isEmpty == false {
                 notesSection
@@ -49,6 +33,8 @@ struct ResultView: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
+
+    // MARK: - Header
 
     private var header: some View {
         HStack(spacing: 8) {
@@ -63,27 +49,201 @@ struct ResultView: View {
             }
 
             Spacer(minLength: 0)
+
+            Text(optionCount == 1 ? "1 suggestion" : "\(optionCount) suggestions")
+                .font(PanelTheme.caption)
+                .foregroundStyle(PanelTheme.textTertiary)
         }
     }
 
-    private var isPrimarySelected: Bool {
-        selectedIndex == 0
+    // MARK: - Suggestions
+
+    private var suggestions: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            sectionLabel("Suggestions")
+
+            ForEach(0..<optionCount, id: \.self) { index in
+                suggestionRow(at: index)
+            }
+        }
     }
 
-    private var primaryCard: some View {
-        Text(result.primary)
-            .font(PanelTheme.prominent)
-            .foregroundStyle(isPrimarySelected ? Color.white : PanelTheme.textPrimary)
-            .lineSpacing(3)
-            .lineLimit(isPrimarySelected ? nil : Self.primaryLineLimit)
-            .fixedSize(horizontal: false, vertical: true)
-            .textSelection(.enabled)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(12)
-            .background(isPrimarySelected ? PanelTheme.selection : PanelTheme.surface, in: PanelTheme.cardShape)
-            .overlay { PanelTheme.cardShape.strokeBorder(PanelTheme.hairline, lineWidth: 1) }
+    private func suggestionRow(at index: Int) -> some View {
+        let isSelected = selectedIndex == index
+        let text = optionText(at: index)
+
+        return VStack(alignment: .leading, spacing: 6) {
+            HStack(alignment: .top, spacing: 10) {
+                KeyCapsuleView(label: index == 0 ? "⏎" : "⌘\(index)", isHighlighted: isSelected)
+
+                Text(text)
+                    .font(index == 0 ? PanelTheme.prominent : PanelTheme.body)
+                    .foregroundStyle(PanelTheme.textPrimary)
+                    .lineSpacing(3)
+                    .lineLimit(isSelected ? nil : Self.unselectedLineLimit)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .textSelection(.enabled)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+
+            HStack(spacing: 10) {
+                Text("\(text.count) characters")
+                    .font(PanelTheme.caption.monospacedDigit())
+                    .foregroundStyle(PanelTheme.textTertiary)
+
+                if isSelected, canShowDiff(for: text) {
+                    tappableCaption(isDiffShown ? "hide diff" : "show diff", action: onToggleDiff)
+                }
+
+                Spacer(minLength: 0)
+
+                Text(isSelected ? "click to copy" : "click to select")
+                    .font(PanelTheme.caption)
+                    .foregroundStyle(PanelTheme.textTertiary)
+            }
+
+            if isSelected, isDiffShown, canShowDiff(for: text) {
+                diffSection(for: text)
+            }
+        }
+        .padding(.leading, 10)
+        .padding(.trailing, 12)
+        .padding(.vertical, 10)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(isSelected ? PanelTheme.selectionSoft : PanelTheme.surface, in: PanelTheme.cardShape)
+        .overlay(alignment: .leading) {
+            if isSelected {
+                Rectangle()
+                    .fill(PanelTheme.selection)
+                    .frame(width: 3)
+                    .clipShape(PanelTheme.cardShape)
+            }
+        }
+        .overlay {
+            PanelTheme.cardShape
+                .strokeBorder(isSelected ? PanelTheme.selectionBorder : PanelTheme.hairline, lineWidth: 1)
+        }
+        .contentShape(Rectangle())
+        .onTapGesture { tap(at: index, isSelected: isSelected) }
+    }
+
+    private func tap(at index: Int, isSelected: Bool) {
+        guard isSelected else {
+            onSelectOption(index)
+            return
+        }
+        if index == 0 {
+            onCopySelected()
+        } else {
+            onCopyAlternative(index - 1)
+        }
+    }
+
+    // MARK: - Diff
+
+    private func diffSection(for text: String) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            sectionLabel("Changes from the original")
+
+            TextDiff.wordDiff(original: sourceText.content, revised: text)
+                .reduce(Text("")) { partial, segment in
+                    switch segment {
+                    case .equal(let words):
+                        return partial + Text(words + " ").foregroundColor(PanelTheme.textTertiary)
+                    case .removed(let words):
+                        return partial + Text(words + " ").strikethrough().foregroundColor(PanelTheme.diffRemoved)
+                    case .added(let words):
+                        return partial + Text(words + " ").bold().foregroundColor(PanelTheme.diffAdded)
+                    }
+                }
+                .font(PanelTheme.body)
+                .lineSpacing(2)
+                .textSelection(.enabled)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(10)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(PanelTheme.background, in: PanelTheme.cardShape)
+                .overlay { PanelTheme.cardShape.strokeBorder(PanelTheme.hairline, lineWidth: 1) }
+        }
+    }
+
+    // MARK: - Notes
+
+    private var notesSection: some View {
+        VStack(alignment: .leading, spacing: 5) {
+            sectionLabel("What changed")
+
+            ForEach(result.notes, id: \.self) { note in
+                HStack(alignment: .top, spacing: 8) {
+                    Circle()
+                        .fill(PanelTheme.textTertiary)
+                        .frame(width: 3, height: 3)
+                        .padding(.top, 6)
+
+                    Text(note)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .font(PanelTheme.caption)
+                .foregroundStyle(PanelTheme.textSecondary)
+            }
+        }
+    }
+
+    // MARK: - Footer
+
+    private var footer: some View {
+        HStack(spacing: 14) {
+            footerItem(key: "⏎", label: "copy", action: onCopySelected)
+            footerItem(key: "⌘⏎", label: "copy and chain", action: nil)
+            footerItem(key: "⌘R", label: "rerun", action: onRerun)
+
+            if canExplain {
+                footerItem(key: "⌘E", label: "explain", action: onExplain)
+            }
+
+            footerItem(key: "⌘←", label: "back", action: onBack)
+
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 7)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(PanelTheme.surface, in: PanelTheme.rowShape)
+    }
+
+    private func footerItem(key: String, label: String, action: (() -> Void)?) -> some View {
+        HStack(spacing: 6) {
+            KeyCapsuleView(label: key, isHighlighted: false)
+            Text(label)
+                .font(PanelTheme.caption)
+                .foregroundStyle(PanelTheme.textSecondary)
+        }
+        .contentShape(Rectangle())
+        .onTapGesture { action?() }
+    }
+
+    // MARK: - Helpers
+
+    private func sectionLabel(_ title: String) -> some View {
+        Text(title.uppercased())
+            .font(PanelTheme.sectionLabel)
+            .foregroundStyle(PanelTheme.textTertiary)
+    }
+
+    private func tappableCaption(_ label: String, action: @escaping () -> Void) -> some View {
+        Text(label)
+            .font(PanelTheme.caption)
+            .foregroundStyle(PanelTheme.selection)
             .contentShape(Rectangle())
-            .onTapGesture { isPrimarySelected ? onCopyPrimary() : onSelectOption(0) }
+            .onTapGesture { action() }
+    }
+
+    private var optionCount: Int {
+        1 + result.alternatives.count
+    }
+
+    private func optionText(at index: Int) -> String {
+        index == 0 ? result.primary : result.alternatives[index - 1]
     }
 
     private var tierLabel: String {
@@ -93,134 +253,12 @@ struct ResultView: View {
         }
     }
 
-    private var alternativesSection: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            ForEach(Array(result.alternatives.enumerated()), id: \.offset) { index, alternative in
-                let isSelected = selectedIndex == index + 1
-
-                VStack(alignment: .leading, spacing: 2) {
-                    HStack(alignment: .top, spacing: 12) {
-                        KeyCapsuleView(label: "\(index + 1)", isHighlighted: isSelected)
-
-                        Text(alternative)
-                            .font(PanelTheme.body)
-                            .foregroundStyle(isSelected ? Color.white : PanelTheme.textSecondary)
-                            .lineSpacing(2)
-                            .lineLimit(isSelected ? nil : Self.alternativeLineLimit)
-                            .fixedSize(horizontal: false, vertical: true)
-                            .textSelection(.enabled)
-
-                        Spacer(minLength: 0)
-                    }
-
-                    characterCountLabel(alternative, color: isSelected ? Color.white.opacity(0.7) : PanelTheme.textTertiary)
-
-                    if isSelected, canShowDiff(for: alternative) {
-                        diffToggle(isHighlighted: true)
-                        if isDiffShown {
-                            diffSection(for: alternative)
-                        }
-                    }
-                }
-                .padding(.vertical, 6)
-                .padding(.horizontal, 8)
-                .background(isSelected ? PanelTheme.selection : Color.clear, in: PanelTheme.rowShape)
-                .contentShape(Rectangle())
-                .onTapGesture { isSelected ? onCopyAlternative(index) : onSelectOption(index + 1) }
-            }
-        }
-    }
-
-    private func characterCountLabel(_ text: String, color: Color) -> some View {
-        Text("\(text.count) characters")
-            .font(PanelTheme.caption)
-            .foregroundStyle(color)
-    }
-
-    private var notesSection: some View {
-        VStack(alignment: .leading, spacing: 5) {
-            ForEach(result.notes, id: \.self) { note in
-                HStack(alignment: .top, spacing: 8) {
-                    Text("•")
-                    Text(note)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-                .font(PanelTheme.caption)
-                .foregroundStyle(PanelTheme.textSecondary)
-            }
-        }
-        .padding(.horizontal, 2)
-    }
-
     private var canExplain: Bool {
         action.supportsExplanation && result.notes.isEmpty == false
     }
 
     private func canShowDiff(for text: String) -> Bool {
         action.supportsDiff && text != sourceText.content
-    }
-
-    private func diffToggle(isHighlighted: Bool) -> some View {
-        HStack(spacing: 8) {
-            KeyCapsuleView(label: "⌘D", isHighlighted: isHighlighted)
-            Text(isDiffShown ? "hide diff" : "show diff")
-                .contentShape(Rectangle())
-                .onTapGesture { onToggleDiff() }
-
-            Spacer(minLength: 0)
-        }
-        .font(PanelTheme.caption)
-        .foregroundStyle(isHighlighted ? Color.white.opacity(0.85) : PanelTheme.textSecondary)
-    }
-
-    private func diffSection(for text: String) -> some View {
-        TextDiff.wordDiff(original: sourceText.content, revised: text)
-            .reduce(Text("")) { partial, segment in
-                switch segment {
-                case .equal(let words):
-                    return partial + Text(words + " ").foregroundColor(PanelTheme.textSecondary)
-                case .removed(let words):
-                    return partial + Text(words + " ").strikethrough().foregroundColor(PanelTheme.diffRemoved)
-                case .added(let words):
-                    return partial + Text(words + " ").bold().foregroundColor(PanelTheme.diffAdded)
-                }
-            }
-            .font(PanelTheme.body)
-            .lineSpacing(2)
-            .textSelection(.enabled)
-            .fixedSize(horizontal: false, vertical: true)
-            .padding(10)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(PanelTheme.surface, in: PanelTheme.cardShape)
-            .overlay { PanelTheme.cardShape.strokeBorder(PanelTheme.hairline, lineWidth: 1) }
-    }
-
-    private var footer: some View {
-        HStack(spacing: 8) {
-            KeyCapsuleView(label: "⏎", isHighlighted: false)
-            Text("copy")
-
-            KeyCapsuleView(label: "⌘R", isHighlighted: false)
-            Text("rerun")
-                .contentShape(Rectangle())
-                .onTapGesture { onRerun() }
-
-            if canExplain {
-                KeyCapsuleView(label: "⌘E", isHighlighted: false)
-                Text("explain")
-                    .contentShape(Rectangle())
-                    .onTapGesture { onExplain() }
-            }
-
-            KeyCapsuleView(label: "⌘←", isHighlighted: false)
-            Text("back")
-                .contentShape(Rectangle())
-                .onTapGesture { onBack() }
-
-            Spacer(minLength: 0)
-        }
-        .font(PanelTheme.caption)
-        .foregroundStyle(PanelTheme.textSecondary)
     }
 
     private var title: String {
