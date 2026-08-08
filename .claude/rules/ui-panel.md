@@ -169,9 +169,17 @@ of suggestion rows, not a hero card plus a separate section — they are the sam
 kind of thing and the keyboard already treats them as one wrapping selection.
 
 Selection is a soft accent tint plus a 3pt accent bar on the leading edge, never
-a solid accent fill. A filled row forces white body text, which makes the
-word-level diff rendered inside it unreadable and inverts the intended
-hierarchy — the same failure the visual pass hit with `.regularMaterial`.
+a solid accent fill — applied through the shared `.selectableRow(isSelected:)`
+modifier, used by the action picker, the parameter picker, the sidebar, the
+suggestion rows and the extra-instruction row alike. A filled row forces white
+foreground text, which makes the word-level diff rendered inside it unreadable
+and inverts the intended hierarchy — the same failure the visual pass hit with
+`.regularMaterial`.
+
+Nothing in the panel may paint white-on-accent any more. `KeyCapsuleView`'s
+highlighted style is accent text on `PanelTheme.selectionKeyCap`; when it was
+white-on-`white.opacity(0.22)` it was designed for a solid accent row and
+vanished the moment the row went light.
 
 Clicking a suggestion that is **not** highlighted moves the highlight to it;
 clicking the already-highlighted one copies it. Each row states which it will

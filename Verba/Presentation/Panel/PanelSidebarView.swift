@@ -142,11 +142,11 @@ private struct OptionRow: View {
             VStack(alignment: .leading, spacing: 1) {
                 Text(title)
                     .font(PanelTheme.secondary)
-                    .foregroundStyle(isSelected ? Color.white : PanelTheme.textPrimary)
+                    .foregroundStyle(PanelTheme.textPrimary)
                 if let detail {
                     Text(detail)
                         .font(PanelTheme.caption)
-                        .foregroundStyle(isSelected ? Color.white.opacity(0.75) : PanelTheme.textTertiary)
+                        .foregroundStyle(PanelTheme.textTertiary)
                 }
             }
             Spacer(minLength: 0)
@@ -154,7 +154,7 @@ private struct OptionRow: View {
         .padding(.horizontal, 8)
         .padding(.vertical, 5)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(isSelected ? PanelTheme.selection : Color.clear, in: PanelTheme.rowShape)
+        .selectableRow(isSelected: isSelected)
         .contentShape(Rectangle())
     }
 }

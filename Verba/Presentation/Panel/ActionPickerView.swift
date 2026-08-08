@@ -45,13 +45,13 @@ private struct ActionRowView: View {
 
             Text(title)
                 .font(PanelTheme.prominent)
-                .foregroundStyle(isSelected ? Color.white : PanelTheme.textPrimary)
+                .foregroundStyle(PanelTheme.textPrimary)
 
             Spacer(minLength: 0)
         }
         .padding(.vertical, 9)
         .padding(.horizontal, 10)
-        .background(isSelected ? PanelTheme.selection : Color.clear, in: PanelTheme.rowShape)
+        .selectableRow(isSelected: isSelected)
     }
 
     private var title: String {

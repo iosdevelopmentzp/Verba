@@ -110,19 +110,9 @@ struct ResultView: View {
         .padding(.trailing, 12)
         .padding(.vertical, 10)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(isSelected ? PanelTheme.selectionSoft : PanelTheme.surface, in: PanelTheme.cardShape)
-        .overlay(alignment: .leading) {
-            if isSelected {
-                Rectangle()
-                    .fill(PanelTheme.selection)
-                    .frame(width: 3)
-                    .clipShape(PanelTheme.cardShape)
-            }
-        }
-        .overlay {
-            PanelTheme.cardShape
-                .strokeBorder(isSelected ? PanelTheme.selectionBorder : PanelTheme.hairline, lineWidth: 1)
-        }
+        .background(isSelected ? Color.clear : PanelTheme.surface, in: PanelTheme.cardShape)
+        .overlay { PanelTheme.cardShape.strokeBorder(isSelected ? Color.clear : PanelTheme.hairline, lineWidth: 1) }
+        .selectableRow(isSelected: isSelected, shape: PanelTheme.cardShape)
         .contentShape(Rectangle())
         .onTapGesture { tap(at: index, isSelected: isSelected) }
     }

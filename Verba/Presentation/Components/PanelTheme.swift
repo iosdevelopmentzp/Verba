@@ -48,6 +48,8 @@ enum PanelTheme {
     static let editableBorder = Color(red: 0.85, green: 0.72, blue: 0.25)
     static let selectionSoft = Color.accentColor.opacity(0.10)
     static let selectionBorder = Color.accentColor.opacity(0.40)
+    static let selectionKeyCap = Color.accentColor.opacity(0.18)
+    static let selectionText = Color.accentColor
 
     // MARK: Shapes
 

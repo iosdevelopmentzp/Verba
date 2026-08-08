@@ -51,19 +51,9 @@ struct ResultControlsView: View {
         .padding(.trailing, 12)
         .padding(.vertical, 9)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(isHighlighted ? PanelTheme.selectionSoft : PanelTheme.surface, in: PanelTheme.cardShape)
-        .overlay(alignment: .leading) {
-            if isHighlighted {
-                Rectangle()
-                    .fill(PanelTheme.selection)
-                    .frame(width: 3)
-                    .clipShape(PanelTheme.cardShape)
-            }
-        }
-        .overlay {
-            PanelTheme.cardShape
-                .strokeBorder(isHighlighted ? PanelTheme.selectionBorder : PanelTheme.hairline, lineWidth: 1)
-        }
+        .background(isHighlighted ? Color.clear : PanelTheme.surface, in: PanelTheme.cardShape)
+        .overlay { PanelTheme.cardShape.strokeBorder(isHighlighted ? Color.clear : PanelTheme.hairline, lineWidth: 1) }
+        .selectableRow(isSelected: isHighlighted, shape: PanelTheme.cardShape)
         .contentShape(Rectangle())
         .onTapGesture { viewModel.openInstructionEditor() }
     }
@@ -84,10 +74,11 @@ struct ChipView: View {
     var body: some View {
         Text(label)
             .font(PanelTheme.caption)
-            .foregroundStyle(isSelected ? Color.white : PanelTheme.textSecondary)
+            .foregroundStyle(isSelected ? PanelTheme.selectionText : PanelTheme.textSecondary)
             .padding(.horizontal, 9)
             .padding(.vertical, 4)
-            .background(isSelected ? PanelTheme.selection : PanelTheme.keyCap, in: Capsule())
+            .background(isSelected ? PanelTheme.selectionKeyCap : PanelTheme.keyCap, in: Capsule())
+            .overlay { Capsule().strokeBorder(isSelected ? PanelTheme.selectionBorder : Color.clear, lineWidth: 1) }
             .contentShape(Capsule())
     }
 }
