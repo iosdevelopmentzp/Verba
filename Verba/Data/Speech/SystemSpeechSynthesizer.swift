@@ -32,6 +32,11 @@ final class SystemSpeechSynthesizer: NSObject, SpeechSynthesizing {
         guard synthesizer.isSpeaking else { return }
         synthesizer.stopSpeaking(at: .immediate)
     }
+
+    func bestVoiceQuality(for language: TextLanguage) -> SpeechVoiceQuality {
+        guard let voice = Self.voice(for: language) else { return .missing }
+        return Self.quality(of: voice)
+    }
 }
 
 // MARK: - AVSpeechSynthesizerDelegate
@@ -55,11 +60,32 @@ extension SystemSpeechSynthesizer: AVSpeechSynthesizerDelegate {
 // MARK: - Private
 
 private extension SystemSpeechSynthesizer {
-    // A voice for the requested language may not be installed; nil lets AVFoundation
-    // fall back to the system voice rather than refusing to speak.
+    // AVSpeechSynthesisVoice(language:) returns the *default* voice, which is the
+    // compact one even when an enhanced or premium voice for the same language is
+    // installed — hence the manual scan for the best available.
     static func voice(for language: TextLanguage) -> AVSpeechSynthesisVoice? {
         guard let code = bcp47(for: language) else { return nil }
-        return AVSpeechSynthesisVoice(language: code)
+        let prefix = String(code.prefix(2))
+
+        let candidates = AVSpeechSynthesisVoice.speechVoices()
+            .filter { $0.language == code || $0.language.hasPrefix(prefix + "-") }
+        guard candidates.isEmpty == false else { return AVSpeechSynthesisVoice(language: code) }
+
+        return candidates.max { lhs, rhs in
+            rank(lhs, exactLanguage: code) < rank(rhs, exactLanguage: code)
+        }
+    }
+
+    static func rank(_ voice: AVSpeechSynthesisVoice, exactLanguage: String) -> Int {
+        quality(of: voice).rawValue * 2 + (voice.language == exactLanguage ? 1 : 0)
+    }
+
+    static func quality(of voice: AVSpeechSynthesisVoice) -> SpeechVoiceQuality {
+        switch voice.quality {
+        case .premium: return .premium
+        case .enhanced: return .enhanced
+        default: return .compact
+        }
     }
 
     static func bcp47(for language: TextLanguage) -> String? {

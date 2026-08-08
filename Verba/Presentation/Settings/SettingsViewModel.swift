@@ -22,6 +22,8 @@ final class SettingsViewModel {
 
     private let secretStore: SecretStoring
     private let preferences: PreferenceStoring
+    private let speechSynthesizer: SpeechSynthesizing
+    private let openVoiceSettings: @MainActor () -> Void
     private let testAPIKey: @Sendable () async -> AppError?
 
     // MARK: Public properties
@@ -51,6 +53,16 @@ final class SettingsViewModel {
         preferences.panelOriginX != nil || preferences.panelTopY != nil
     }
 
+    var needsBetterVoices: Bool {
+        TextLanguage.selectable.contains { speechSynthesizer.bestVoiceQuality(for: $0) <= .compact }
+    }
+
+    var voiceSummary: String {
+        TextLanguage.selectable
+            .map { "\($0.displayName): \(speechSynthesizer.bestVoiceQuality(for: $0).displayName)" }
+            .joined(separator: " · ")
+    }
+
     var hasPromptOverrides: Bool {
         preferences.promptOverrides.isEmpty == false
     }
@@ -65,11 +77,15 @@ final class SettingsViewModel {
         secretStore: SecretStoring,
         preferences: PreferenceStoring,
         modelOptions: [ModelOption],
+        speechSynthesizer: SpeechSynthesizing,
+        openVoiceSettings: @escaping @MainActor () -> Void,
         testAPIKey: @escaping @Sendable () async -> AppError?
     ) {
         self.secretStore = secretStore
         self.preferences = preferences
         self.modelOptions = modelOptions
+        self.speechSynthesizer = speechSynthesizer
+        self.openVoiceSettings = openVoiceSettings
         self.testAPIKey = testAPIKey
     }
 
@@ -96,6 +112,10 @@ final class SettingsViewModel {
             guard Task.isCancelled == false else { return }
             keyTestState = error.map(KeyTestState.failure) ?? .success
         }
+    }
+
+    func openVoiceDownloads() {
+        openVoiceSettings()
     }
 
     func resetPanelPosition() {

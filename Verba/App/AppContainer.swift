@@ -38,6 +38,7 @@ final class AppContainer {
         let retryPolicy = RetryPolicy()
         let resultCache = ResultCache()
         let usageMeter = UsageMeter(preferences: preferences, logger: logger)
+        let speechSynthesizer = SystemSpeechSynthesizer()
 
         let textProcessor = LLMTextProcessor(
             providerRegistry: providerRegistry,
@@ -60,7 +61,7 @@ final class AppContainer {
             deliverResultUseCase: deliverResultUseCase,
             explainFixesUseCase: explainFixesUseCase,
             promptPreview: PromptPreview(promptBuilder: promptBuilder),
-            speechSynthesizer: SystemSpeechSynthesizer(),
+            speechSynthesizer: speechSynthesizer,
             preferences: preferences,
             usageMeter: usageMeter
         )
@@ -80,6 +81,8 @@ final class AppContainer {
             secretStore: secretStore,
             preferences: preferences,
             modelOptions: modelOptions,
+            speechSynthesizer: speechSynthesizer,
+            openVoiceSettings: { NSWorkspace.shared.open(Self.accessibilitySettingsURL) },
             testAPIKey: { [textProcessor] in
                 await Self.testAPIKey(using: textProcessor)
             }
@@ -110,6 +113,12 @@ final class AppContainer {
     }
 
     // MARK: Private methods
+
+    // The Spoken Content anchor is not published, so this opens Accessibility's root
+    // pane; the Settings copy names the rest of the path.
+    private static let accessibilitySettingsURL = URL(
+        string: "x-apple.systempreferences:com.apple.preference.universalaccess"
+    )!
 
     private static func testAPIKey(using processor: TextProcessing) async -> AppError? {
         let sampleText = SourceText(content: "Ping.", language: .english, origin: .manual)

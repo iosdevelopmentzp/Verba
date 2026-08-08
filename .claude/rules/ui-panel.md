@@ -178,9 +178,13 @@ screen.
 
 Language follows the content, not the interface: the source is spoken in its own
 language, and a translate result in the **target** language.
-`AVSpeechSynthesisVoice(language:)` returns nil when a voice is not installed
-(Ukrainian often is not), which correctly falls back to the system voice instead
-of refusing to speak.
+`AVSpeechSynthesisVoice(language:)` must **not** be used to pick the voice: it
+returns the *default* voice for a language, which is the compact one even when an
+enhanced or premium voice is installed. `SystemSpeechSynthesizer.voice(for:)`
+scans `speechVoices()` and ranks by quality first, exact-locale match second.
+Settings reports the best installed quality per language and points at the free
+Enhanced/Premium downloads when only compact voices are present — that download,
+not the code, is what actually fixes perceived speech quality.
 
 ## Chips and key capsules must never wrap
 

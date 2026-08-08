@@ -183,6 +183,17 @@ private extension Creativity {
     }
 }
 
+extension SpeechVoiceQuality {
+    var displayName: String {
+        switch self {
+        case .missing: return "none installed"
+        case .compact: return "compact"
+        case .enhanced: return "enhanced"
+        case .premium: return "premium"
+        }
+    }
+}
+
 extension PanelAppearance {
     var displayName: String {
         switch self {
