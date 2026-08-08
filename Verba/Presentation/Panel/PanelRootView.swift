@@ -3,7 +3,6 @@ import SwiftUI
 enum PanelFocus: Hashable {
     case root
     case draft
-    case instruction
 }
 
 struct PanelRootView: View {
@@ -41,6 +40,7 @@ struct PanelRootView: View {
             .overlay(alignment: .bottom) { hudOverlay }
             .overlay { explanationOverlay }
             .overlay { promptOverlay }
+            .overlay { instructionOverlay }
     }
 
     @ViewBuilder
@@ -96,7 +96,11 @@ struct PanelRootView: View {
                         onToggleDiff: { viewModel.toggleDiff() }
                     )
 
-                    ResultControlsView(viewModel: viewModel, action: action, focus: $focus)
+                    ResultControlsView(
+                        viewModel: viewModel,
+                        action: action,
+                        isHighlighted: PanelViewModel.isInstructionRow(selectedIndex, result: result)
+                    )
                 }
             }
 
@@ -159,6 +163,19 @@ struct PanelRootView: View {
                 onReset: { viewModel.resetPrompt() },
                 onApply: { viewModel.applyPromptEditor() },
                 onDismiss: { viewModel.dismissPromptEditor() }
+            )
+        }
+    }
+
+    @ViewBuilder
+    private var instructionOverlay: some View {
+        if let instructionEditor = viewModel.instructionEditor {
+            InstructionOverlayView(
+                state: instructionEditor,
+                onDraftChange: { viewModel.updateInstructionDraft($0) },
+                onClear: { viewModel.clearInstructionEditor() },
+                onApply: { viewModel.applyInstructionEditor() },
+                onDismiss: { viewModel.dismissInstructionEditor() }
             )
         }
     }

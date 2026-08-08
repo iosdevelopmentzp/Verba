@@ -110,8 +110,8 @@ override var canBecomeMain: Bool { false }
 | `⏎` | picking | run the selected action |
 | `⇥` | picking | edit the captured text — goes to `manualEntry` prefilled with it, origin becomes `.manual` on accept |
 | `1`–`6` | picking, result, failed | run that action directly; `3` / `5` (change tone / humanize) always open the parameter picker instead, preselected to the last tone/level chosen |
-| `↑` `↓` | result | move the highlight across `primary` and its alternatives |
-| `⏎` | result | copy the highlighted option, show HUD |
+| `↑` `↓` | result | move the highlight across `primary`, its alternatives, and the extra-instruction row |
+| `⏎` | result | copy the highlighted option, show HUD — or open the extra-instruction editor when that row is highlighted |
 | `⌘⏎` | result | copy the highlighted option, then go back to `picking` with *that highlighted option* (not the original capture) as the new source, origin `.chained` |
 | `⌘1` `⌘2` `⌘3` | result | copy alternative 1/2/3 directly, show HUD |
 | `⇥` | manualEntry | accept typed/edited text, go to `picking` |
@@ -123,7 +123,7 @@ override var canBecomeMain: Bool { false }
 | `⇥` | result, failed | edit the source, then re-run the same action on it |
 | `⌘T` `⌘⇧T` | result (translate) | cycle target / source language |
 | `⌘J` | result | cycle creativity (precise / balanced / creative) |
-| `⌘I` | result | focus the extra-instruction field |
+| `⌘I` | result | open the extra-instruction editor |
 | `⌘P` | result | open the prompt viewer/editor overlay |
 | `⌘C` | anywhere a source exists | copy the original source text, show HUD (handled via `FloatingPanel.copy(_:)`, not `onKeyPress`) |
 | `⎋` | anywhere | cancel and close |
@@ -146,11 +146,21 @@ constant, and `resizeToFitContent()` compares width as well as height.
 ## Result-screen controls
 
 `ResultControlsView` owns what sits below `ResultView`: the extra-instruction
-field and the "view and edit prompt" control. Everything else moved to the
+row and the "view and edit prompt" control. Everything else moved to the
 sidebar. The extra instruction is stored **per action**
 (`PanelViewModel.extraInstructions`, keyed by `TextAction.Kind`), so translate
 and rephrase keep separate one-off instructions; all of them clear when the
-panel closes. It takes the view model
+panel closes.
+
+The extra instruction is a **selectable row, not an inline text field** — it is
+the last index in the result screen's `↑`/`↓` ring
+(`PanelViewModel.instructionRowIndex(for:)`), and `⏎` or a click on it opens
+`InstructionOverlayView`. Editing in an overlay rather than inline is what keeps
+the result screen's keyboard map alive: a focused inline field swallows `↑`/`↓`,
+`⏎` and the bare digits, and there was no affordance telling the user which mode
+they were in. The overlay owns focus for as long as it is up, `⏎` applies and
+closes, `Esc` cancels — and `PanelViewModel.handle(_:)` swallows every other key
+while it is open, the same contract as the explanation and prompt overlays. It takes the view model
 directly (the `ManualEntryView` precedent) so `ResultView`'s parameter list
 does not keep growing. Each control is both clickable and keyboard-reachable.
 

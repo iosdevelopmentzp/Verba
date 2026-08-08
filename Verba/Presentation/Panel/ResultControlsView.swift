@@ -3,36 +3,15 @@ import SwiftUI
 struct ResultControlsView: View {
     let viewModel: PanelViewModel
     let action: TextAction
-    @FocusState.Binding var focus: PanelFocus?
+    let isHighlighted: Bool
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HairlineDivider()
+        VStack(alignment: .leading, spacing: 6) {
+            Text("EXTRA INSTRUCTION")
+                .font(PanelTheme.sectionLabel)
+                .foregroundStyle(PanelTheme.textTertiary)
 
-            HStack(spacing: 8) {
-                Text("EXTRA INSTRUCTION")
-                    .font(PanelTheme.sectionLabel)
-                    .foregroundStyle(PanelTheme.textTertiary)
-
-                Text("for \(actionName)")
-                    .font(PanelTheme.caption)
-                    .foregroundStyle(PanelTheme.textTertiary)
-
-                Spacer(minLength: 0)
-
-                KeyCapsuleView(label: "⌘I", isHighlighted: false)
-            }
-
-            TextField("Add a one-off instruction, then press ⏎", text: instructionBinding)
-                .textFieldStyle(.plain)
-                .font(PanelTheme.secondary)
-                .foregroundStyle(PanelTheme.textPrimary)
-                .focused($focus, equals: .instruction)
-                .onSubmit { viewModel.applyExtraInstruction() }
-                .padding(.horizontal, 10)
-                .padding(.vertical, 7)
-                .background(PanelTheme.surface, in: PanelTheme.rowShape)
-                .overlay { PanelTheme.rowShape.strokeBorder(PanelTheme.hairline, lineWidth: 1) }
+            instructionRow
 
             HStack(spacing: 8) {
                 KeyCapsuleView(label: "⌘P", isHighlighted: false)
@@ -46,18 +25,55 @@ struct ResultControlsView: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .onChange(of: viewModel.instructionFocusRequestID) { _, _ in focus = .instruction }
+    }
+
+    private var instructionRow: some View {
+        HStack(alignment: .top, spacing: 10) {
+            KeyCapsuleView(label: "⌘I", isHighlighted: isHighlighted)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(instruction.isEmpty ? "Add a one-off instruction for \(actionName)" : instruction)
+                    .font(PanelTheme.secondary)
+                    .foregroundStyle(instruction.isEmpty ? PanelTheme.textTertiary : PanelTheme.textPrimary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+
+                if isHighlighted {
+                    Text(instruction.isEmpty ? "⏎ to write one" : "⏎ to edit")
+                        .font(PanelTheme.caption)
+                        .foregroundStyle(PanelTheme.textTertiary)
+                }
+            }
+
+            Spacer(minLength: 0)
+        }
+        .padding(.leading, 10)
+        .padding(.trailing, 12)
+        .padding(.vertical, 9)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(isHighlighted ? PanelTheme.selectionSoft : PanelTheme.surface, in: PanelTheme.cardShape)
+        .overlay(alignment: .leading) {
+            if isHighlighted {
+                Rectangle()
+                    .fill(PanelTheme.selection)
+                    .frame(width: 3)
+                    .clipShape(PanelTheme.cardShape)
+            }
+        }
+        .overlay {
+            PanelTheme.cardShape
+                .strokeBorder(isHighlighted ? PanelTheme.selectionBorder : PanelTheme.hairline, lineWidth: 1)
+        }
+        .contentShape(Rectangle())
+        .onTapGesture { viewModel.openInstructionEditor() }
+    }
+
+    private var instruction: String {
+        viewModel.extraInstruction(for: action)
     }
 
     private var actionName: String {
         action.titleEnglish.lowercased()
-    }
-
-    private var instructionBinding: Binding<String> {
-        Binding(
-            get: { viewModel.extraInstruction(for: action) },
-            set: { viewModel.updateExtraInstruction($0, for: action) }
-        )
     }
 }
 

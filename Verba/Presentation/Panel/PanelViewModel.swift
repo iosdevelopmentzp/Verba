@@ -6,6 +6,12 @@ struct PendingRun: Equatable {
     let parameters: ActionParameters
 }
 
+struct InstructionEditorState: Equatable {
+    let actionTitle: String
+    let hadInstruction: Bool
+    var draft: String
+}
+
 struct PromptEditorState: Equatable {
     let actionTitle: String
     let preamble: String
@@ -56,7 +62,7 @@ final class PanelViewModel {
     private(set) var creativity: Creativity
     private(set) var extraInstructions: [String: String] = [:]
     private(set) var promptEditor: PromptEditorState?
-    private(set) var instructionFocusRequestID = 0
+    private(set) var instructionEditor: InstructionEditorState?
     private(set) var rootFocusRequestID = 0
 
     var onRequestClose: (() -> Void)?
@@ -90,6 +96,7 @@ final class PanelViewModel {
         _ = creativity
         _ = isSidebarExpanded
         _ = promptEditor
+        _ = instructionEditor
         _ = explanation
         _ = usageSnapshot
     }
@@ -161,6 +168,7 @@ final class PanelViewModel {
         isHUDVisible = false
         extraInstructions = [:]
         sessionPromptOverrides = [:]
+        instructionEditor = nil
         promptEditor = nil
         dismissExplanation()
         state = .capturing
@@ -315,12 +323,39 @@ final class PanelViewModel {
         extraInstructions[action.id.rawValue] = text
     }
 
-    func focusExtraInstruction() {
-        instructionFocusRequestID += 1
+    func openInstructionEditor() {
+        guard let action = currentAction else { return }
+        let existing = extraInstruction(for: action)
+        instructionEditor = InstructionEditorState(
+            actionTitle: action.titleEnglish,
+            hadInstruction: existing.isEmpty == false,
+            draft: existing
+        )
     }
 
-    func applyExtraInstruction() {
+    func updateInstructionDraft(_ text: String) {
+        instructionEditor?.draft = text
+    }
+
+    func dismissInstructionEditor() {
+        instructionEditor = nil
+        rootFocusRequestID += 1
+    }
+
+    func applyInstructionEditor() {
+        guard let action = currentAction, let editor = instructionEditor else { return }
+        let trimmed = editor.draft.trimmingCharacters(in: .whitespacesAndNewlines)
+        let previous = extraInstruction(for: action)
+        instructionEditor = nil
+        rootFocusRequestID += 1
+
+        guard trimmed != previous else { return }
+        updateExtraInstruction(trimmed, for: action)
         rerunCurrentAction()
+    }
+
+    func clearInstructionEditor() {
+        instructionEditor?.draft = ""
     }
 
     func setCreativity(_ value: Creativity) {
@@ -418,8 +453,20 @@ final class PanelViewModel {
 
     func selectOption(at index: Int) {
         guard case .result(let source, let action, let result, _) = state,
-              (0...result.alternatives.count).contains(index) else { return }
+              (0..<Self.rowCount(for: result)).contains(index) else { return }
         state = .result(source: source, action: action, result: result, selectedIndex: index)
+    }
+
+    static func instructionRowIndex(for result: ActionResult) -> Int {
+        1 + result.alternatives.count
+    }
+
+    static func rowCount(for result: ActionResult) -> Int {
+        instructionRowIndex(for: result) + 1
+    }
+
+    static func isInstructionRow(_ index: Int, result: ActionResult) -> Bool {
+        index == instructionRowIndex(for: result)
     }
 
     func toggleSidebar() {
@@ -459,7 +506,9 @@ final class PanelViewModel {
     }
 
     func handleEscape() {
-        if promptEditor != nil {
+        if instructionEditor != nil {
+            dismissInstructionEditor()
+        } else if promptEditor != nil {
             dismissPromptEditor()
         } else if explanation != nil {
             dismissExplanation()
@@ -474,7 +523,7 @@ final class PanelViewModel {
             return .handled
         }
 
-        guard explanation == nil, promptEditor == nil else { return .handled }
+        guard explanation == nil, promptEditor == nil, instructionEditor == nil else { return .handled }
 
         switch state {
         case .capturing, .running:
@@ -763,14 +812,14 @@ final class PanelViewModel {
         result: ActionResult,
         selectedIndex: Int
     ) -> KeyPress.Result {
-        let optionCount = 1 + result.alternatives.count
+        let rowCount = Self.rowCount(for: result)
 
         if press.key == .upArrow {
             state = .result(
                 source: source,
                 action: action,
                 result: result,
-                selectedIndex: moveSelection(by: -1, count: optionCount, from: selectedIndex)
+                selectedIndex: moveSelection(by: -1, count: rowCount, from: selectedIndex)
             )
             return .handled
         }
@@ -779,8 +828,12 @@ final class PanelViewModel {
                 source: source,
                 action: action,
                 result: result,
-                selectedIndex: moveSelection(by: 1, count: optionCount, from: selectedIndex)
+                selectedIndex: moveSelection(by: 1, count: rowCount, from: selectedIndex)
             )
+            return .handled
+        }
+        if press.key == .return, Self.isInstructionRow(selectedIndex, result: result) {
+            openInstructionEditor()
             return .handled
         }
         if press.key == .return, press.modifiers.contains(.command) {
@@ -816,7 +869,7 @@ final class PanelViewModel {
             return .handled
         }
         if press.modifiers.contains(.command), Self.isLetter(press, "i") {
-            focusExtraInstruction()
+            openInstructionEditor()
             return .handled
         }
         if press.modifiers.contains(.command), Self.isLetter(press, "p") {
