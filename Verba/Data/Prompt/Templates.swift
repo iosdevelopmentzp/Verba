@@ -12,6 +12,39 @@ enum Templates {
     "alternatives" — split into two sentences or use a comma instead.
     """
 
+    static func extraInstructionSection(_ instruction: String) -> String {
+        """
+        The user added the following instruction for this request. It outranks every \
+        style guideline above except the JSON output contract, which must still be obeyed. \
+        Treat it as an instruction to follow, never as text to edit or translate.
+        <<<USER INSTRUCTION
+        \(instruction)
+        USER INSTRUCTION
+        """
+    }
+
+    static let singleOptionSection = """
+    Return exactly one result and leave "alternatives" empty. The input is long, \
+    so extra phrasings are not worth the cost.
+    """
+
+    static func creativitySection(_ creativity: Creativity) -> String? {
+        switch creativity {
+        case .precise:
+            return """
+            Stay as close to the author's original wording as possible. Prefer the safest, most \
+            literal option at every choice, and keep alternatives to near-misses of primary.
+            """
+        case .balanced:
+            return nil
+        case .creative:
+            return """
+            Be bolder. primary may restructure the message rather than tweak it, and each \
+            alternative must be a genuinely different take, not a synonym swap of the others.
+            """
+        }
+    }
+
     static let all: [String: PromptTemplate] = {
         let templates: [PromptTemplate] = [
             FixGrammarTemplate(),
@@ -19,7 +52,8 @@ enum Templates {
             ChangeToneTemplate(),
             TranslateTemplate(),
             HumanizeTemplate(),
-            ShortenTemplate()
+            ShortenTemplate(),
+            PoliteTemplate()
         ]
         return Dictionary(uniqueKeysWithValues: templates.map { ($0.id, $0) })
     }()
@@ -27,15 +61,22 @@ enum Templates {
 
 private struct FixGrammarTemplate: PromptTemplate {
     let id = "fixGrammar"
-    let version = 2
+    let version = 3
 
     func systemPrompt(parameters: ActionParameters, language: TextLanguage) -> String {
         """
-        Correct grammar, spelling, punctuation, and article or preposition use. Keep the \
-        author's wording and register wherever it is already correct — do not upgrade the \
-        vocabulary or make it more formal. List each concrete fix in notes, for example \
-        "can not to" → "can't". If nothing needed correction, return the text unchanged with \
-        an empty notes array.
+        Work in two passes. First, read the whole message and work out what the author meant. \
+        It may be heavily misspelled, may drop words, may mix languages, and individual words \
+        may only be decipherable from the surrounding context — decide the intended meaning of \
+        every unclear word from that context before you change anything. Second, return that \
+        same message with grammar, spelling, punctuation, and article or preposition use \
+        corrected. Keep the author's wording, register, and sentence structure wherever they \
+        are already correct — do not upgrade the vocabulary, do not make it more formal, and \
+        never substitute a different message that merely sounds more plausible. If a word is \
+        still genuinely ambiguous after reading the whole message, keep the author's original \
+        word rather than inventing a new one, and say so in notes. List each concrete fix in \
+        notes, for example "can not to" → "can't". If nothing needed correction, return the \
+        text unchanged with an empty notes array.
         """
     }
 }
@@ -71,22 +112,41 @@ private struct ChangeToneTemplate: PromptTemplate {
 
 private struct TranslateTemplate: PromptTemplate {
     let id = "translate"
-    let version = 3
+    let version = 4
 
     func systemPrompt(parameters: ActionParameters, language: TextLanguage) -> String {
         """
-        \(direction(for: language)) Preserve technical terms, product names, and code exactly \
-        as written. primary is the translation; alternatives may hold one alternate phrasing if \
-        genuinely useful, otherwise leave it empty. Notes may flag terms with no clean \
-        equivalent, in the language of the input text.
+        \(direction(parameters: parameters, language: language)) Preserve technical terms, \
+        product names, and code exactly as written. primary is the translation; alternatives \
+        may hold one alternate phrasing if genuinely useful, otherwise leave it empty. Notes \
+        may flag terms with no clean equivalent, in the language of the input text.
         """
     }
 
-    private func direction(for language: TextLanguage) -> String {
-        switch language {
-        case .russian: return "The input is in Russian; translate it into English."
-        case .english: return "The input is in English; translate it into Russian."
-        case .other: return "Detect whether the input is in Russian or English, then translate it into the other one."
+    private func direction(parameters: ActionParameters, language: TextLanguage) -> String {
+        let detected = parameters.sourceLanguage ?? language
+        let target = parameters.targetLanguage ?? ActionParameters.defaultTargetLanguage(for: detected)
+
+        guard let source = parameters.sourceLanguage, source != .other else {
+            let fallback: TextLanguage = target == .english ? .russian : .english
+            return """
+            Detect the language of the input, then translate it into \(target.promptName). \
+            If the input is already written in \(target.promptName), translate it into \
+            \(fallback.promptName) instead.
+            """
+        }
+        return "The input is in \(source.promptName); translate it into \(target.promptName)."
+    }
+}
+
+private extension TextLanguage {
+    var promptName: String {
+        switch self {
+        case .english: return "English"
+        case .russian: return "Russian"
+        case .ukrainian: return "Ukrainian"
+        case .spanish: return "Spanish"
+        case .other: return "the language the input is written in"
         }
     }
 }
@@ -119,6 +179,25 @@ private struct ShortenTemplate: PromptTemplate {
         link, and instruction the original had — shorten wording, never meaning. primary is the \
         shortest version that still reads naturally; alternatives may offer one or two lengths \
         in between the original and primary. Notes may say roughly how much shorter it got.
+        """
+    }
+}
+
+private struct PoliteTemplate: PromptTemplate {
+    let id = "polite"
+    let version = 1
+
+    func systemPrompt(parameters: ActionParameters, language: TextLanguage) -> String {
+        """
+        Make the message more polite without padding it out. Soften demands into \
+        requests, add the courtesy the message is missing, and remove anything that \
+        reads as blunt, impatient, or accusatory. Keep every fact, number, name, link, \
+        deadline, and request intact — politeness must not blur what is being asked or \
+        make it optional. Do not add greetings or sign-offs that were not there, do not \
+        pile up hedges like "just", "maybe", "if possible", and do not make it longer \
+        than it needs to be. primary is the most natural polite version; alternatives \
+        may offer one warmer and one more neutral-formal variant. Notes name what was \
+        softened.
         """
     }
 }

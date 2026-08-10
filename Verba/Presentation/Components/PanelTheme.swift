@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 enum PanelTheme {
@@ -9,7 +10,15 @@ enum PanelTheme {
     static let contentPadding: CGFloat = 22
     static let sectionSpacing: CGFloat = 16
     static let cardCornerRadius: CGFloat = 12
+    static let grabberHeight: CGFloat = 14
+    static let promptEditorMinHeight: CGFloat = 560
     static let rowCornerRadius: CGFloat = 10
+    static let sidebarWidth: CGFloat = 196
+    static let sidebarRailWidth: CGFloat = 30
+
+    static func panelWidth(isSidebarExpanded: Bool) -> CGFloat {
+        width + (isSidebarExpanded ? sidebarWidth : sidebarRailWidth) + 1
+    }
 
     // MARK: Typography
 
@@ -19,19 +28,48 @@ enum PanelTheme {
     static let secondary = Font.system(size: 13, weight: .regular)
     static let caption = Font.system(size: 12, weight: .regular)
     static let key = Font.system(size: 12, weight: .semibold, design: .rounded)
+    static let sectionLabel = Font.system(size: 10, weight: .semibold).width(.expanded)
+    static let mono = Font.system(size: 12, weight: .regular, design: .monospaced)
 
     // MARK: Colors
 
-    static let background = Color(white: 0.99)
-    static let surface = Color(white: 0.955)
-    static let hairline = Color.black.opacity(0.10)
-    static let keyCap = Color.black.opacity(0.06)
+    static let background = Color.panel(light: .init(white: 0.99), dark: .init(white: 0.13))
+    static let surface = Color.panel(light: .init(white: 0.955), dark: .init(white: 0.175))
+    static let sidebarBackground = Color.panel(light: .init(white: 0.945), dark: .init(white: 0.16))
+    static let locked = Color.panel(light: .init(white: 0.91), dark: .init(white: 0.215))
+    static let hairline = Color.panel(
+        light: .init(white: 0, alpha: 0.10),
+        dark: .init(white: 1, alpha: 0.14)
+    )
+    static let keyCap = Color.panel(
+        light: .init(white: 0, alpha: 0.06),
+        dark: .init(white: 1, alpha: 0.10)
+    )
+    static let textPrimary = Color.panel(light: .init(white: 0.10), dark: .init(white: 0.95))
+    static let textSecondary = Color.panel(light: .init(white: 0.38), dark: .init(white: 0.72))
+    static let textTertiary = Color.panel(light: .init(white: 0.55), dark: .init(white: 0.56))
+    static let diffRemoved = Color.panel(
+        light: .init(red: 0.75, green: 0.15, blue: 0.15),
+        dark: .init(red: 0.98, green: 0.48, blue: 0.48)
+    )
+    static let diffAdded = Color.panel(
+        light: .init(red: 0.10, green: 0.50, blue: 0.20),
+        dark: .init(red: 0.44, green: 0.86, blue: 0.55)
+    )
+    static let editable = Color.panel(
+        light: .init(red: 0.99, green: 0.98, blue: 0.93),
+        dark: .init(red: 0.20, green: 0.185, blue: 0.135)
+    )
+    static let editableBorder = Color.panel(
+        light: .init(red: 0.85, green: 0.72, blue: 0.25),
+        dark: .init(red: 0.72, green: 0.61, blue: 0.28)
+    )
+
     static let selection = Color.accentColor
-    static let textPrimary = Color(white: 0.10)
-    static let textSecondary = Color(white: 0.38)
-    static let textTertiary = Color(white: 0.55)
-    static let diffRemoved = Color(red: 0.75, green: 0.15, blue: 0.15)
-    static let diffAdded = Color(red: 0.10, green: 0.5, blue: 0.20)
+    static let selectionSoft = Color.accentColor.opacity(0.14)
+    static let selectionBorder = Color.accentColor.opacity(0.40)
+    static let selectionKeyCap = Color.accentColor.opacity(0.20)
+    static let selectionText = Color.accentColor
 
     // MARK: Shapes
 
@@ -45,6 +83,24 @@ enum PanelTheme {
 
     static var rowShape: RoundedRectangle {
         RoundedRectangle(cornerRadius: rowCornerRadius, style: .continuous)
+    }
+}
+
+private extension Color {
+    static func panel(light: NSColor, dark: NSColor) -> Color {
+        Color(nsColor: NSColor(name: nil) { appearance in
+            appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua ? dark : light
+        })
+    }
+}
+
+private extension NSColor {
+    convenience init(white: CGFloat, alpha: CGFloat = 1) {
+        self.init(srgbRed: white, green: white, blue: white, alpha: alpha)
+    }
+
+    convenience init(red: CGFloat, green: CGFloat, blue: CGFloat) {
+        self.init(srgbRed: red, green: green, blue: blue, alpha: 1)
     }
 }
 

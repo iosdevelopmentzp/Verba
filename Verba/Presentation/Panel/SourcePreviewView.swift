@@ -3,6 +3,9 @@ import SwiftUI
 struct SourcePreviewView: View {
     let sourceText: SourceText
     let onCopyOriginal: () -> Void
+    let onEditOriginal: () -> Void
+    let isSpeaking: Bool
+    let onToggleSpeech: () -> Void
 
     @State private var isExpanded = false
 
@@ -39,12 +42,21 @@ struct SourcePreviewView: View {
 
                 Spacer(minLength: 0)
 
+                SpeechButton(isSpeaking: isSpeaking, action: onToggleSpeech)
+
                 KeyCapsuleView(label: "⌘C", isHighlighted: false)
                 Text("copy")
                     .font(PanelTheme.caption)
                     .foregroundStyle(PanelTheme.textSecondary)
                     .contentShape(Rectangle())
                     .onTapGesture { onCopyOriginal() }
+
+                KeyCapsuleView(label: "⇥", isHighlighted: false)
+                Text("edit")
+                    .font(PanelTheme.caption)
+                    .foregroundStyle(PanelTheme.textSecondary)
+                    .contentShape(Rectangle())
+                    .onTapGesture { onEditOriginal() }
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)

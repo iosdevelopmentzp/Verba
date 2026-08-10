@@ -8,6 +8,15 @@ enum OpenAIRequestBuilder {
 
     // MARK: Public methods
 
+    static func reasoningEffort(for creativity: Creativity, modelID: String) -> String {
+        guard creativity != .creative else { return "low" }
+        return ModelCatalog.entry(id: modelID)?.lowestReasoningEffort ?? ModelCatalog.universalReasoningEffort
+    }
+
+    static func verbosity(for creativity: Creativity) -> String {
+        creativity == .creative ? "medium" : "low"
+    }
+
     static func body(for request: LLMRequest) -> [String: Any] {
         [
             "model": request.modelID,
@@ -16,7 +25,7 @@ enum OpenAIRequestBuilder {
                 ["role": "user", "content": request.userContent]
             ],
             "text": [
-                "verbosity": "low",
+                "verbosity": verbosity(for: request.creativity),
                 "format": [
                     "type": "json_schema",
                     "name": schemaName,
@@ -25,7 +34,7 @@ enum OpenAIRequestBuilder {
                 ]
             ],
             "reasoning": [
-                "effort": request.minimalReasoningEffort ? "minimal" : "low"
+                "effort": reasoningEffort(for: request.creativity, modelID: request.modelID)
             ],
             "max_output_tokens": request.maxOutputTokens
         ]

@@ -6,11 +6,11 @@ struct TextAction: Sendable, Identifiable, Equatable {
         case translate
         case humanize
         case shorten
+        case polite
     }
 
     let id: Kind
     let titleEnglish: String
-    let titleRussian: String
     let numberKey: Int
     let templateID: String
     let tier: ModelTier

@@ -205,6 +205,18 @@ know only `Domain`; `App` knows everybody.
   identity. Rather than ship a toggle that silently does nothing, no
   synthesis code exists in the tree. Revisit only with a Developer ID
   certificate; the clipboard path (⌘C by hand) remains the primary capture.
+- **The panel's theme is user-selectable (Auto/Light/Dark), which supersedes
+  the "always light" rule below.** The ban on semantic colors and materials
+  still stands and is the reason this works: because every `PanelTheme` colour
+  is an explicit value, adding a second explicit value per token turns each one
+  into a two-branch dynamic `NSColor` that AppKit resolves against the window's
+  `NSAppearance`. `FloatingPanel.apply(_:)` sets that appearance from
+  `PreferenceStoring.panelAppearance`. No call site changed, no SwiftUI state
+  drives it, and `.regularMaterial`/`.primary`/`.secondary` remain banned —
+  a dynamic colour with two hand-picked values is not vibrancy.
+  `PanelTheme` importing `AppKit` for `NSColor` is a knowing exception to the
+  `architecture.md` import table; it is rendering vocabulary, not a `Data` type,
+  and `Scripts/check-layers.sh` does not flag it.
 - **Visual pass — the panel is always light, and never uses semantic
   colors or materials.** The panel shipped rendering in the system dark
   appearance at 10–13pt with `.regularMaterial` behind it, which the user
@@ -237,6 +249,77 @@ know only `Domain`; `App` knows everybody.
   default. `MenuBarExtra` uses the `text.badge.checkmark` SF Symbol, which
   renders correctly as a template image at menu bar sizes. Add a real
   `AppIcon` asset set when there is artwork.
+- **The panel is draggable and remembers its position, overriding the
+  `isMovableByWindowBackground = false` invariant.** `.claude/rules/ui-panel.md`
+  pinned the panel to "centered on the mouse screen, 28% from the top" and
+  HANDOFF.md §15 listed that under "do not re-litigate". The user asked for a
+  movable panel that reopens where it was left, which is a direct product
+  decision that outranks the earlier default. `windowDidMove` persists the
+  origin, but only when `isPositioningProgrammatically` is false — `reveal()`
+  and `resizeToFitContent()` both move the window themselves, and without that
+  flag the height-fitting pass would silently rewrite the user's saved origin on
+  every state change. Restored frames are clamped to `visibleFrame` (the
+  original code used `frame`, ignoring menu bar and Dock), so an unplugged
+  display or a tall result cannot strand the panel off-screen.
+- **`ActionParameters.extraInstruction` is interpolated into the *system*
+  prompt, against `.claude/rules/llm-layer.md`'s "user text goes in
+  `userContent` only".** That rule exists to stop the text being edited from
+  being read as instructions. An extra instruction is the opposite case: put in
+  `userContent` next to the subject text, the model rewrites the instruction
+  instead of obeying it. It goes into the system prompt inside a fenced
+  `USER INSTRUCTION` block that explicitly outranks the template body but not
+  the JSON contract. The rule has been amended to scope it to the subject text.
+- **"More creative" is not a temperature.** The Responses API rejects
+  `temperature` for GPT-5-family reasoning models, so `Creativity` drives
+  `reasoning.effort` and `text.verbosity` (previously a hardcoded `"low"` in
+  `OpenAIDTO`) plus an appended prompt clause. `balanced` reproduces the
+  pre-Creativity request byte for byte, so existing behaviour is unchanged
+  unless the user opts out of it. `LLMRequest.minimalReasoningEffort: Bool` was
+  replaced by explicit `reasoningEffort`/`verbosity` strings rather than growing
+  a second boolean.
+- **`gpt-5-mini` was dropped from `ModelCatalog` in favour of `gpt-5.6-luna`.**
+  Luna is both newer and cheaper ($0.20/$1.20 per 1M versus $0.25/$2.00), so
+  there is no tier where mini still wins. `gpt-5.6-terra` is listed as a
+  non-default standard-tier option. No migration code is needed:
+  `UserDefaultsPreferenceStore.modelID` already falls back to
+  `ModelCatalog.defaultModel(...)` when the stored id is not a catalog entry.
+- **`reasoning.effort` has no value that every model accepts.** Shipping
+  `"minimal"` for the whole catalog produced a hard HTTP 400 on every
+  standard-tier request (`gpt-5.6-luna`: *"'minimal' is not supported with the
+  'gpt-5.6-luna' model. Supported values are: 'none', 'low', 'medium', 'high',
+  'xhigh', and 'max'"*), while economy-tier `gpt-5-nano` kept working because
+  it accepts `"minimal"` and rejects `"none"`. `ModelCatalogEntry` now carries
+  `lowestReasoningEffort` per model. Verified against the live Responses API,
+  not inferred. Any new catalog entry must have this value confirmed by an
+  actual request before it ships.
+- **HTTP 400/404/422 map to `.malformedRequest(status:)`, not `.unknown`.** The
+  effort bug above was invisible for a full debugging session because
+  `OpenAIErrorMapper` funnelled 400 into `default: .unknown`, so a
+  parameter the API explicitly named in its response body surfaced to the user
+  as "something went wrong". `malformedRequest` is never retried and offers
+  "Open Settings" as its recovery.
+- **`Data/Speech` imports `AVFoundation`, which is not in the `architecture.md`
+  import table.** Speech is an outside-world capability behind a `Domain`
+  protocol (`SpeechSynthesizing`), the same shape as pasteboard and Keychain
+  access, so it belongs in `Data`; the table simply predates the feature.
+  `AVSpeechSynthesizer` is entirely on-device, so this adds no network path and
+  no new TCC permission. `Scripts/check-layers.sh` does not flag it.
+- **`TextLanguage` doubles as detected-source and chosen-target, and now has
+  five cases.** Widening it to `english/russian/ukrainian/spanish/other` was
+  cheaper than introducing a parallel "target language" enum, because
+  `PromptBuilder`, `ExplainFixesPrompt`, and `SourceText` all already speak
+  `TextLanguage`. `selectable` deliberately excludes `.other` — it is a
+  detection outcome, never something a user picks. The four
+  `language == .russian ? titleRussian : titleEnglish` sites are ternaries, so
+  Ukrainian and Spanish fall through to the English titles rather than needing
+  new translations.
+- **`PanelWindowController` tracks `PanelViewModel.trackLayoutInputs()`, not
+  `state`.** `withObservationTracking` only re-fires for properties actually
+  read inside the closure. Every result-screen control added here lives in a
+  sibling observable property, not in a `PanelState` payload, so reading only
+  `state` would have left the window at its old height whenever a chip, the
+  extra-instruction field, or the diff toggle changed the content. The list of
+  height-affecting properties now lives in one place, in the view model.
 - **`manualEntry`'s plain Return is self-managed, not native `TextField`
   passthrough.** `TextField(_:text:axis: .vertical)` is documented to
   insert a newline on Return rather than submitting, but in this app's

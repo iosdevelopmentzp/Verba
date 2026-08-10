@@ -1,31 +1,46 @@
 import SwiftUI
 
+enum PanelFocus: Hashable {
+    case root
+    case draft
+}
+
 struct PanelRootView: View {
     let viewModel: PanelViewModel
 
-    @FocusState private var isRootFocused: Bool
+    @FocusState private var focus: PanelFocus?
 
     var body: some View {
-        ScrollView {
-            content
-                .padding(PanelTheme.contentPadding)
+        HStack(spacing: 0) {
+            VStack(spacing: 0) {
+                PanelGrabberView()
+
+                ScrollView {
+                    content
+                        .padding(.horizontal, PanelTheme.contentPadding)
+                        .padding(.bottom, PanelTheme.contentPadding)
+                }
+            }
+            .frame(width: PanelTheme.width, alignment: .leading)
+
+            PanelSidebarView(viewModel: viewModel)
         }
-        .frame(width: PanelTheme.width, alignment: .leading)
+        .frame(width: PanelTheme.panelWidth(isSidebarExpanded: viewModel.isSidebarExpanded), alignment: .leading)
             .frame(maxHeight: viewModel.maxContentHeight)
+            .frame(minHeight: viewModel.promptEditor == nil ? nil : PanelTheme.promptEditorMinHeight)
             .background(PanelTheme.background, in: PanelTheme.panelShape)
             .overlay { PanelTheme.panelShape.strokeBorder(PanelTheme.hairline, lineWidth: 1) }
             .focusable()
             .focusEffectDisabled()
-            .focused($isRootFocused)
+            .focused($focus, equals: .root)
             .onKeyPress { press in viewModel.handle(press) }
-            .onAppear { isRootFocused = true }
-            .onChange(of: isManualEntry) { _, newValue in
-                guard newValue == false else { return }
-                isRootFocused = true
-            }
+            .onAppear { focus = .root }
+            .onChange(of: viewModel.rootFocusRequestID) { _, _ in focus = .root }
             .overlay(alignment: .top) { budgetBanner }
             .overlay(alignment: .bottom) { hudOverlay }
             .overlay { explanationOverlay }
+            .overlay { promptOverlay }
+            .overlay { instructionOverlay }
     }
 
     @ViewBuilder
@@ -35,7 +50,7 @@ struct PanelRootView: View {
             capturingView
 
         case .manualEntry:
-            ManualEntryView(viewModel: viewModel)
+            ManualEntryView(viewModel: viewModel, focus: $focus)
 
         case .picking(let source, let selectedIndex):
             withSource(source) {
@@ -65,19 +80,34 @@ struct PanelRootView: View {
 
         case .result(let source, let action, let result, let selectedIndex):
             withSource(source) {
-                ResultView(
-                    sourceText: source,
-                    action: action,
-                    result: result,
-                    selectedIndex: selectedIndex,
-                    onCopyPrimary: { viewModel.copyPrimary() },
-                    onCopyAlternative: { viewModel.copyAlternative(at: $0) },
-                    onRerun: { viewModel.rerun() },
-                    onExplain: { viewModel.explainFixes() },
-                    onBack: { viewModel.goBackToPicking() },
-                    isDiffShown: viewModel.isDiffShown,
-                    onToggleDiff: { viewModel.toggleDiff() }
-                )
+                VStack(alignment: .leading, spacing: PanelTheme.sectionSpacing) {
+                    if action.id == .translate {
+                        TranslationBarView(viewModel: viewModel)
+                    }
+
+                    ResultView(
+                        sourceText: source,
+                        action: action,
+                        result: result,
+                        selectedIndex: selectedIndex,
+                        onCopySelected: { viewModel.copySelectedOption() },
+                        onCopyAlternative: { viewModel.copyAlternative(at: $0) },
+                        onSelectOption: { viewModel.selectOption(at: $0) },
+                        speakingOption: viewModel.speakingOption,
+                        onToggleSpeech: { viewModel.toggleSpeech(for: .option($0)) },
+                        onRerun: { viewModel.rerun() },
+                        onExplain: { viewModel.explainFixes() },
+                        onBack: { viewModel.goBackToPicking() },
+                        isDiffShown: viewModel.isDiffShown,
+                        onToggleDiff: { viewModel.toggleDiff() }
+                    )
+
+                    ResultControlsView(
+                        viewModel: viewModel,
+                        action: action,
+                        isHighlighted: PanelViewModel.isInstructionRow(selectedIndex, result: result)
+                    )
+                }
             }
 
         case .failed(let source, _, let error):
@@ -129,6 +159,34 @@ struct PanelRootView: View {
     }
 
     @ViewBuilder
+    private var promptOverlay: some View {
+        if let promptEditor = viewModel.promptEditor {
+            PromptOverlayView(
+                state: promptEditor,
+                actionTitle: promptEditor.actionTitle,
+                onBodyChange: { viewModel.updatePromptBody($0) },
+                onPersistenceChange: { viewModel.setPromptPersistent($0) },
+                onReset: { viewModel.resetPrompt() },
+                onApply: { viewModel.applyPromptEditor() },
+                onDismiss: { viewModel.dismissPromptEditor() }
+            )
+        }
+    }
+
+    @ViewBuilder
+    private var instructionOverlay: some View {
+        if let instructionEditor = viewModel.instructionEditor {
+            InstructionOverlayView(
+                state: instructionEditor,
+                onDraftChange: { viewModel.updateInstructionDraft($0) },
+                onClear: { viewModel.clearInstructionEditor() },
+                onApply: { viewModel.applyInstructionEditor() },
+                onDismiss: { viewModel.dismissInstructionEditor() }
+            )
+        }
+    }
+
+    @ViewBuilder
     private var budgetBanner: some View {
         if viewModel.isOverBudget, let usageSnapshot = viewModel.usageSnapshot {
             BudgetWarningBanner(snapshot: usageSnapshot)
@@ -136,17 +194,18 @@ struct PanelRootView: View {
         }
     }
 
-    private var isManualEntry: Bool {
-        guard case .manualEntry = viewModel.state else { return false }
-        return true
-    }
-
     private func withSource<Content: View>(
         _ source: SourceText,
         @ViewBuilder content: () -> Content
     ) -> some View {
         VStack(alignment: .leading, spacing: PanelTheme.sectionSpacing) {
-            SourcePreviewView(sourceText: source, onCopyOriginal: { viewModel.copyOriginal() })
+            SourcePreviewView(
+                sourceText: source,
+                onCopyOriginal: { viewModel.copyOriginal() },
+                onEditOriginal: { viewModel.editCurrentSource() },
+                isSpeaking: viewModel.speakingTarget == .source,
+                onToggleSpeech: { viewModel.toggleSpeech(for: .source) }
+            )
             HairlineDivider()
             content()
         }
@@ -155,7 +214,7 @@ struct PanelRootView: View {
 
 private struct ManualEntryView: View {
     let viewModel: PanelViewModel
-    @FocusState private var isDraftFocused: Bool
+    @FocusState.Binding var focus: PanelFocus?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -168,7 +227,7 @@ private struct ManualEntryView: View {
                 .font(PanelTheme.prominent)
                 .foregroundStyle(PanelTheme.textPrimary)
                 .lineLimit(1...6)
-                .focused($isDraftFocused)
+                .focused($focus, equals: .draft)
                 .padding(12)
                 .background(PanelTheme.surface, in: PanelTheme.cardShape)
                 .overlay { PanelTheme.cardShape.strokeBorder(PanelTheme.hairline, lineWidth: 1) }
@@ -179,7 +238,7 @@ private struct ManualEntryView: View {
 
                 Button("Clear") {
                     viewModel.updateManualDraft("")
-                    isDraftFocused = true
+                    focus = .draft
                 }
                 .controlSize(.regular)
 
@@ -188,7 +247,7 @@ private struct ManualEntryView: View {
                     .foregroundStyle(PanelTheme.textSecondary)
             }
         }
-        .onAppear { isDraftFocused = true }
+        .onAppear { focus = .draft }
     }
 
     private var draftBinding: Binding<String> {
@@ -218,5 +277,17 @@ private struct BudgetWarningBanner: View {
 
     private static func currency(_ value: Decimal) -> String {
         value.formatted(.currency(code: "USD"))
+    }
+}
+
+private struct PanelGrabberView: View {
+    var body: some View {
+        Capsule()
+            .fill(PanelTheme.hairline)
+            .frame(width: 46, height: 4)
+            .frame(maxWidth: .infinity)
+            .frame(height: PanelTheme.grabberHeight)
+            .contentShape(Rectangle())
+            .gesture(WindowDragGesture())
     }
 }

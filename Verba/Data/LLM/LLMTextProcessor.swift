@@ -20,16 +20,22 @@ final class LLMTextProcessor: TextProcessing, FixExplaining {
     private static let minimumOutputTokens = 700
     private static let maxOutputTokensCeiling = 2000
 
-    private static let responseSchema: [String: JSONValue] = [
-        "type": "object",
-        "additionalProperties": false,
-        "required": ["primary", "alternatives", "notes"],
-        "properties": [
-            "primary": ["type": "string"],
-            "alternatives": ["type": "array", "maxItems": 3, "items": ["type": "string"]],
-            "notes": ["type": "array", "maxItems": 4, "items": ["type": "string"]]
+    private static func responseSchema(allowsAlternatives: Bool) -> [String: JSONValue] {
+        [
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["primary", "alternatives", "notes"],
+            "properties": [
+                "primary": ["type": "string"],
+                "alternatives": [
+                    "type": "array",
+                    "maxItems": JSONValue.int(allowsAlternatives ? 3 : 0),
+                    "items": ["type": "string"]
+                ],
+                "notes": ["type": "array", "maxItems": 4, "items": ["type": "string"]]
+            ]
         ]
-    ]
+    }
 
     private static let explainActionID = "explainFixes"
 
@@ -96,6 +102,10 @@ final class LLMTextProcessor: TextProcessing, FixExplaining {
             language: text.language,
             text: text.content
         )
+        let allowsAlternatives = OutputBudget.allowsAlternatives(
+            action: action,
+            characterCount: text.content.count
+        )
         let maxOutputTokens = Self.maxOutputTokens(forCharacterCount: text.content.count)
 
         let clock = ContinuousClock()
@@ -109,7 +119,9 @@ final class LLMTextProcessor: TextProcessing, FixExplaining {
                 systemPrompt: prompt.systemPrompt,
                 userContent: prompt.userContent,
                 maxOutputTokens: maxOutputTokens,
-                tier: tier
+                tier: tier,
+                creativity: parameters.creativity,
+                allowsAlternatives: allowsAlternatives
             )
 
             logger.llmRequestSucceeded(
@@ -199,7 +211,9 @@ final class LLMTextProcessor: TextProcessing, FixExplaining {
         systemPrompt: String,
         userContent: String,
         maxOutputTokens: Int,
-        tier: ModelTier
+        tier: ModelTier,
+        creativity: Creativity,
+        allowsAlternatives: Bool
     ) async throws -> (result: ActionResult, inputTokens: Int, outputTokens: Int) {
         do {
             return try await requestWithRetry(
@@ -210,6 +224,8 @@ final class LLMTextProcessor: TextProcessing, FixExplaining {
                 userContent: userContent,
                 maxOutputTokens: maxOutputTokens,
                 tier: tier,
+                creativity: creativity,
+                allowsAlternatives: allowsAlternatives,
                 strict: false
             )
         } catch AppError.malformedResponse {
@@ -219,8 +235,10 @@ final class LLMTextProcessor: TextProcessing, FixExplaining {
                 modelID: modelID,
                 systemPrompt: systemPrompt,
                 userContent: userContent,
-                maxOutputTokens: maxOutputTokens,
+                maxOutputTokens: min(Self.maxOutputTokensCeiling, maxOutputTokens * 2),
                 tier: tier,
+                creativity: creativity,
+                allowsAlternatives: allowsAlternatives,
                 strict: true
             )
         }
@@ -234,6 +252,8 @@ final class LLMTextProcessor: TextProcessing, FixExplaining {
         userContent: String,
         maxOutputTokens: Int,
         tier: ModelTier,
+        creativity: Creativity,
+        allowsAlternatives: Bool,
         strict: Bool
     ) async throws -> (result: ActionResult, inputTokens: Int, outputTokens: Int) {
         do {
@@ -245,6 +265,8 @@ final class LLMTextProcessor: TextProcessing, FixExplaining {
                 userContent: userContent,
                 maxOutputTokens: maxOutputTokens,
                 tier: tier,
+                creativity: creativity,
+                allowsAlternatives: allowsAlternatives,
                 strict: strict
             )
         } catch let error as AppError where retryPolicy.shouldRetry(error) {
@@ -257,6 +279,8 @@ final class LLMTextProcessor: TextProcessing, FixExplaining {
                 userContent: userContent,
                 maxOutputTokens: maxOutputTokens,
                 tier: tier,
+                creativity: creativity,
+                allowsAlternatives: allowsAlternatives,
                 strict: strict
             )
         }
@@ -270,6 +294,8 @@ final class LLMTextProcessor: TextProcessing, FixExplaining {
         userContent: String,
         maxOutputTokens: Int,
         tier: ModelTier,
+        creativity: Creativity,
+        allowsAlternatives: Bool,
         strict: Bool
     ) async throws -> (result: ActionResult, inputTokens: Int, outputTokens: Int) {
         let finalSystemPrompt = strict ? systemPrompt + "\n\n" + Self.strictInstruction : systemPrompt
@@ -278,21 +304,21 @@ final class LLMTextProcessor: TextProcessing, FixExplaining {
             modelID: modelID,
             systemPrompt: finalSystemPrompt,
             userContent: userContent,
-            jsonSchema: Self.responseSchema,
+            jsonSchema: Self.responseSchema(allowsAlternatives: allowsAlternatives),
             maxOutputTokens: maxOutputTokens,
-            minimalReasoningEffort: true
+            creativity: creativity
         )
 
         var response = try await client.complete(request, apiKey: apiKey)
 
-        if response.isTruncated {
+        if response.isTruncated, maxOutputTokens < Self.maxOutputTokensCeiling {
             let widened = LLMRequest(
                 modelID: modelID,
                 systemPrompt: finalSystemPrompt,
                 userContent: userContent,
-                jsonSchema: Self.responseSchema,
+                jsonSchema: Self.responseSchema(allowsAlternatives: allowsAlternatives),
                 maxOutputTokens: min(Self.maxOutputTokensCeiling, maxOutputTokens * 2),
-                minimalReasoningEffort: true
+                creativity: creativity
             )
             response = try await client.complete(widened, apiKey: apiKey)
         }
@@ -375,19 +401,19 @@ final class LLMTextProcessor: TextProcessing, FixExplaining {
             userContent: userContent,
             jsonSchema: Self.explainSchema,
             maxOutputTokens: maxOutputTokens,
-            minimalReasoningEffort: true
+            creativity: .balanced
         )
 
         var response = try await client.complete(request, apiKey: apiKey)
 
-        if response.isTruncated {
+        if response.isTruncated, maxOutputTokens < Self.maxOutputTokensCeiling {
             let widened = LLMRequest(
                 modelID: modelID,
                 systemPrompt: systemPrompt,
                 userContent: userContent,
                 jsonSchema: Self.explainSchema,
                 maxOutputTokens: min(Self.maxOutputTokensCeiling, maxOutputTokens * 2),
-                minimalReasoningEffort: true
+                creativity: .balanced
             )
             response = try await client.complete(widened, apiKey: apiKey)
         }

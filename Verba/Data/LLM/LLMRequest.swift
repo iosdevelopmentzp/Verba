@@ -4,5 +4,5 @@ struct LLMRequest: Sendable {
     let userContent: String
     let jsonSchema: [String: JSONValue]
     let maxOutputTokens: Int
-    let minimalReasoningEffort: Bool
+    let creativity: Creativity
 }

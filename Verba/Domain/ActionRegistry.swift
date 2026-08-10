@@ -3,7 +3,6 @@ enum ActionRegistry {
         TextAction(
             id: .fixGrammar,
             titleEnglish: "Fix grammar",
-            titleRussian: "Исправить грамматику",
             numberKey: 1,
             templateID: "fixGrammar",
             tier: .economy,
@@ -14,7 +13,6 @@ enum ActionRegistry {
         TextAction(
             id: .rephrase,
             titleEnglish: "Rephrase",
-            titleRussian: "Перефразировать",
             numberKey: 2,
             templateID: "rephrase",
             tier: .standard,
@@ -25,7 +23,6 @@ enum ActionRegistry {
         TextAction(
             id: .changeTone,
             titleEnglish: "Change tone",
-            titleRussian: "Изменить тон",
             numberKey: 3,
             templateID: "changeTone",
             tier: .standard,
@@ -35,8 +32,7 @@ enum ActionRegistry {
         ),
         TextAction(
             id: .translate,
-            titleEnglish: "Translate RU⇄EN",
-            titleRussian: "Перевести RU⇄EN",
+            titleEnglish: "Translate",
             numberKey: 4,
             templateID: "translate",
             tier: .economy,
@@ -47,7 +43,6 @@ enum ActionRegistry {
         TextAction(
             id: .humanize,
             titleEnglish: "Humanize",
-            titleRussian: "Сделать человечнее",
             numberKey: 5,
             templateID: "humanize",
             tier: .standard,
@@ -58,9 +53,18 @@ enum ActionRegistry {
         TextAction(
             id: .shorten,
             titleEnglish: "Make shorter",
-            titleRussian: "Сделать короче",
             numberKey: 6,
             templateID: "shorten",
+            tier: .standard,
+            needsParameters: false,
+            supportsExplanation: false,
+            supportsDiff: true
+        ),
+        TextAction(
+            id: .polite,
+            titleEnglish: "Make more polite",
+            numberKey: 7,
+            templateID: "polite",
             tier: .standard,
             needsParameters: false,
             supportsExplanation: false,

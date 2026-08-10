@@ -8,12 +8,14 @@ struct KeyCapsuleView: View {
         Text(label)
             .font(PanelTheme.key)
             .monospacedDigit()
-            .foregroundStyle(isHighlighted ? Color.white : PanelTheme.textSecondary)
+            .lineLimit(1)
+            .fixedSize()
+            .foregroundStyle(isHighlighted ? PanelTheme.selectionText : PanelTheme.textSecondary)
             .frame(minWidth: 22)
             .padding(.horizontal, 7)
             .padding(.vertical, 4)
             .background(
-                isHighlighted ? Color.white.opacity(0.22) : PanelTheme.keyCap,
+                isHighlighted ? PanelTheme.selectionKeyCap : PanelTheme.keyCap,
                 in: RoundedRectangle(cornerRadius: 6, style: .continuous)
             )
     }

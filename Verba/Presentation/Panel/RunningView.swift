@@ -26,6 +26,6 @@ struct RunningView: View {
     }
 
     private var title: String {
-        sourceText.language == .russian ? action.titleRussian : action.titleEnglish
+        action.titleEnglish
     }
 }

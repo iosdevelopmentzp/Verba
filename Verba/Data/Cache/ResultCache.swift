@@ -7,7 +7,7 @@ actor ResultCache: ResultCaching {
 
     // MARK: Static
 
-    private static let capacity = 50
+    private static let capacity = 200
 
     // MARK: Public methods
 
